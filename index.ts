@@ -2,7 +2,7 @@
 import { Client, GatewayIntentBits, EmbedBuilder, TextChannel } from "discord.js";
 import pg from "pg";
 import { DateTime } from "luxon";
-import { startPatreonPgListener } from "./patreon-listener"; // <-- fixed
+import { startPatreonPgListener } from "./src/patreon-listener"; // <-- fixed
 
 // --- ENV ---
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN!;
