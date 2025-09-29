@@ -1,8 +1,8 @@
 // index.ts
-import { Client, GatewayIntentBits, EmbedBuilder, TextChannel } from "discord.js";
+import { Client, GatewayIntentBits, EmbedBuilder, TextChannel, ActivityType } from "discord.js";
 import pg from "pg";
 import { DateTime } from "luxon";
-import { startPatreonPgListener } from "./src/patreon-listener"; // <-- fixed
+import { startPatreonPgListener } from "./src/patreon-listener";
 
 // --- ENV ---
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN!;
@@ -20,7 +20,9 @@ const { Client: PgClient } = pg;
 let pgClient: pg.Client | null = null;
 
 async function connectPgSessions() {
-  if (pgClient) try { await pgClient.end(); } catch {}
+  if (pgClient) {
+    try { await pgClient.end(); } catch {}
+  }
   pgClient = new PgClient({ connectionString: DIRECT_DATABASE_URL });
 
   pgClient.on("error", (err) => {
@@ -65,8 +67,20 @@ async function handleSessionPaid(p: any) {
 // --- Ready: start listeners ---
 client.once("ready", () => {
   console.log(`Logged in as ${client.user?.tag}`);
+
+  // Presence
+  client.user?.setPresence({
+    activities: [{ name: "You xd", type: ActivityType.Watching }],
+    status: "online",
+  });
+
+  // Log DB target (sanity check that it matches Vercel)
+  const u = new URL(DIRECT_DATABASE_URL);
+  console.log("[BOT] DB target:", u.host, u.pathname);
+
+  // Start listeners
   connectPgSessions().catch((e) => console.error("[PG] connect error", e));
-  startPatreonPgListener(client); // uses PATREON_CHANNEL_ID + DIRECT_DATABASE_URL
+  startPatreonPgListener(client).catch((e) => console.error("[PG] patreon start error", e));
 });
 
 // --- Login ---
