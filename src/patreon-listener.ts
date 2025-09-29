@@ -23,13 +23,23 @@ export async function startPatreonPgListener(client: Client) {
   pgc.on("notification", async (msg) => {
     if (msg.channel !== "patreon_posts" || !msg.payload) return;
     try {
-      const { url, title } = JSON.parse(msg.payload);
+      const { url } = JSON.parse(msg.payload);
+      if (!url) return;
+
+      // always normalize to full link
+      const fullUrl = url.startsWith("http")
+        ? url
+        : `https://www.patreon.com${url}`;
+
       const ch = await client.channels.fetch(PATREON_CHANNEL_ID).catch(() => null);
       if (ch && ch.isTextBased()) {
         await (ch as TextChannel).send({
-          content: url
-            ? `✨ New Patreon post: **${title ?? "New Patreon Post"}**\n${url}`
-            : `✨ New Patreon post: **${title ?? "New Patreon Post"}**`,
+          embeds: [
+            {
+              description: `**[Patreon Post](${fullUrl})**`,
+              color: 0xfc8803, // orange accent
+            },
+          ],
         });
       }
     } catch (err) {
