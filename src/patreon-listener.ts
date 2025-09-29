@@ -43,7 +43,7 @@ export async function startPatreonPgListener(client: Client) {
       const ch = await client.channels.fetch(PATREON_CHANNEL_ID).catch(() => null);
       if (ch && ch.isTextBased()) {
         await (ch as TextChannel).send({
-          content: `**${fullUrl}**`, // raw link -> Discord auto preview
+          content: `${fullUrl}`, // raw link -> Discord auto preview
         });
       } else {
         console.error("[PG] channel fetch failed or not text-based");
