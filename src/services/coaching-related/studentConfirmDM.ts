@@ -1,3 +1,4 @@
+// src/services/coaching-related/studentConfirmDM.ts
 import type { Client } from "discord.js";
 import { DateTime } from "luxon";
 import type { BookingPayload } from "./bookingDM";
@@ -9,35 +10,34 @@ export async function notifyStudent(
 
   const {
     studentName,
-    studentDiscord,
-    riotTag,
+    discordId,
     scheduledStart,
     scheduledMinutes,
     sessionType,
   } = p;
 
-  if (!studentDiscord) return false;
+  if (!discordId) return false;
 
-  const user = await client.users.fetch(studentDiscord).catch(() => null);
+  const user = await client.users.fetch(discordId).catch(() => null);
   if (!user) return false;
 
-  const dt = DateTime.fromISO(scheduledStart, { zone: "Europe/Berlin" });
-  const date = dt.toFormat("dd LLL yyyy");
-  const time = dt.toFormat("HH:mm");
+  // Convert to unix timestamp (UTC-safe)
+  const unix = Math.floor(DateTime.fromISO(scheduledStart).toSeconds());
 
   const msg = [
-    `Hey ${studentName || "there"}! 👋`,
+    `> **HEY ${studentName || "THERE"}!**`,
+    `> You just booked a **${sessionType}** with Sho! :partying_face:`,
     ``,
-    `Your **${sessionType === "Custom Session" ? `${scheduledMinutes}min Custom Session` : sessionType}** is booked!`,
+    `Here are some useful details:`,
+    `:pencil: **Info:** \`${scheduledMinutes} minutes\``,
+    `📅 **Date:** <t:${unix}:D>`,
+    `⏰ **Time:** <t:${unix}:t> \`[your timezone]\``,
     ``,
-    `📅 **Date:** ${date}`,
-    `⏰ **Time:** ${time} (Berlin)`,
-    riotTag ? `🎮 **Riot:** ${riotTag}` : ``,
+    `I will send you a little reminder a few hours before the session! :mage:`,
+    `If you have questions at all, please reach out to Sho directly (he doesn't mind).`,
     ``,
-    `If you have questions before the session, feel free to DM me here!`,
-  ]
-    .filter(Boolean)
-    .join("\n");
+    `**We're looking forward to working with you!** 🥰`
+  ].join("\n");
 
   try {
     await user.send(msg);

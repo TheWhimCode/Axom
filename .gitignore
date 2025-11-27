@@ -1,9 +1,4 @@
 node_modules/
-<<<<<<< HEAD
 .env
-dist/
-=======
 dist/
 build/
-.env
->>>>>>> 60f390bfd805996c553d760e6564abb644238bd4

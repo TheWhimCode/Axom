@@ -1,5 +1,13 @@
 // index.ts (at project root)
-import { Client, GatewayIntentBits, TextChannel, ActivityType } from "discord.js";
+import {
+  Client,
+  GatewayIntentBits,
+  TextChannel,
+  ActivityType,
+  Events,
+  Partials,
+} from "discord.js";
+
 import { startPatreonPgListener } from "./src/listener/patreon-listener";
 import { startSessionListener, sessionEvents } from "./src/listener/sessionPaid";
 import { notifyOwner } from "./src/services/coaching-related/bookingDM";
@@ -8,6 +16,7 @@ import { handlePendingDMOnJoin } from "./src/services/coaching-related/joinServe
 
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN!;
 const PATREON_CHANNEL_ID = process.env.PATREON_CHANNEL_ID!;
+const DIRECT_DATABASE_URL = process.env.DIRECT_DATABASE_URL!;
 
 const client = new Client({
   intents: [
@@ -15,32 +24,30 @@ const client = new Client({
     GatewayIntentBits.DirectMessages,
     GatewayIntentBits.GuildMembers,
   ],
+  partials: [Partials.Channel],
 });
 
 // --- Ready: start listeners ---
-client.once("clientReady", () => {
+client.once(Events.ClientReady, () => {
   console.log(`Logged in as ${client.user?.tag}`);
 
-  // Presence
+  // only keep this one useful log
+  console.log("Connected to DB:", DIRECT_DATABASE_URL);
+
   client.user?.setPresence({
-    activities: [{ name: "You xd", type: ActivityType.Watching }],
+    activities: [{ name: "I AM A BUTTERFLY", type: ActivityType.Watching }],
     status: "online",
   });
 
-  // Session listener
   startSessionListener();
-
-  // Patreon listener
   startPatreonPgListener(client);
 
-  // Deliver pending DM on join
   client.on("guildMemberAdd", handlePendingDMOnJoin);
-});
 
-// When session is paid
-sessionEvents.on("sessionPaid", async (payload) => {
-  notifyOwner(client, payload);
-  notifyStudent(client, payload);
+  sessionEvents.on("sessionPaid", async (payload) => {
+    notifyOwner(client, payload);
+    notifyStudent(client, payload);
+  });
 });
 
 // --- Login ---

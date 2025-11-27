@@ -1,39 +1,54 @@
-// src/services/db/sessionListener.ts
-import { Pool } from "pg";
+// src/listener/sessionPaid.ts
+import pg from "pg";
 import EventEmitter from "events";
-import type { BookingPayload } from "../services/coaching-related/bookingDM";
 
 const DIRECT_DATABASE_URL = process.env.DIRECT_DATABASE_URL!;
+const { Client: PgClient } = pg;
 
-// exported event bus
 export const sessionEvents = new EventEmitter();
 
-// shared pool
-const pool = new Pool({
-  connectionString: DIRECT_DATABASE_URL,
-  ssl: true,
-});
+export function startSessionListener() {
+  let client: pg.Client | null = null;
 
-export async function startSessionListener() {
-  const pgClient = await pool.connect();
+  async function connect() {
+    try {
+      if (client) {
+        try { await client.end(); } catch {}
+      }
 
-  pgClient.on("error", (err) => {
-    console.error("[PG][sessions_paid] transient error", err);
-  });
+      client = new PgClient({ connectionString: DIRECT_DATABASE_URL });
+      await client.connect();
+      await client.query("LISTEN sessions_paid");
+      console.log("[PG] sessions_paid listener ready");
 
-  await pgClient.query("LISTEN sessions_paid");
-  console.log("[PG] listening on sessions_paid");
+      client.on("notification", onNotification);
+      client.on("error", onError);
 
-  pgClient.on("notification", (msg) => {
+    } catch {
+      console.log("[PG] sessions_paid reconnecting…");
+      retry();
+    }
+  }
+
+  function retry() {
+    setTimeout(connect, 5000);
+  }
+
+  function onNotification(msg: pg.Notification) {
     if (msg.channel !== "sessions_paid" || !msg.payload) return;
 
-    let payload: BookingPayload;
     try {
-      payload = JSON.parse(msg.payload);
+      const payload = JSON.parse(msg.payload);
+      sessionEvents.emit("sessionPaid", payload);
     } catch {
-      return;
+      /* ignore bad json */
     }
+  }
 
-    sessionEvents.emit("sessionPaid", payload);
-  });
+  function onError() {
+    console.log("[PG] sessions_paid connection lost, reconnecting…");
+    retry();
+  }
+
+  connect();
 }

@@ -6,8 +6,8 @@ import { DateTime } from "luxon";
 const OWNER_ID = process.env.OWNER_ID!;
 
 export interface BookingPayload {
+  discordId: string | null;
   studentName: string | null;
-  studentDiscord: string | null;
   riotTag: string | null;
   scheduledStart: string;
   scheduledMinutes: number;
@@ -21,7 +21,7 @@ export async function notifyOwner(client: Client, p: BookingPayload) {
 
   const {
     studentName,
-    studentDiscord,
+    discordId,
     riotTag,
     scheduledStart,
     scheduledMinutes,
@@ -33,6 +33,7 @@ export async function notifyOwner(client: Client, p: BookingPayload) {
   const formattedTime = `${dt.toFormat("dd LLL")}\n${dt.toFormat("HH:mm")}`;
 
   const embed = new EmbedBuilder()
+    .setColor(0x57F287)
     .setTitle(
       sessionType === "Custom Session"
         ? `New Custom Session [${scheduledMinutes} min]`
@@ -41,8 +42,8 @@ export async function notifyOwner(client: Client, p: BookingPayload) {
     .addFields(
       {
         name: "Student",
-        value: studentDiscord
-          ? `<@${studentDiscord}>`
+        value: discordId
+          ? `<@${discordId}>`
           : studentName || "—",
       },
       {

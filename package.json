@@ -3,15 +3,9 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-<<<<<<< HEAD
-"scripts": {
-  "dev": "tsx -r dotenv/config ./index.ts"
-},
-=======
   "scripts": {
     "dev": "tsx -r dotenv/config ./index.ts"
   },
->>>>>>> 60f390bfd805996c553d760e6564abb644238bd4
   "keywords": [],
   "author": "",
   "license": "ISC",
@@ -26,10 +20,6 @@
     "@types/luxon": "^3.7.1",
     "@types/node": "^24.5.2",
     "@types/pg": "^8.15.5",
-<<<<<<< HEAD
-=======
-    "ts-node": "^10.9.2",
->>>>>>> 60f390bfd805996c553d760e6564abb644238bd4
     "tsx": "^4.20.6",
     "typescript": "^5.9.2"
   }
