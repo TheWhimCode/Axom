@@ -1,6 +1,5 @@
-<<<<<<< HEAD
 // index.ts (at project root)
-import { Client, GatewayIntentBits, TextChannel } from "discord.js";
+import { Client, GatewayIntentBits, TextChannel, ActivityType } from "discord.js";
 import { startPatreonPgListener } from "./src/listener/patreon-listener";
 import { startSessionListener, sessionEvents } from "./src/listener/sessionPaid";
 import { notifyOwner } from "./src/services/coaching-related/bookingDM";
@@ -8,103 +7,18 @@ import { notifyStudent } from "./src/services/coaching-related/studentConfirmDM"
 import { handlePendingDMOnJoin } from "./src/services/coaching-related/joinServerHold";
 
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN!;
-=======
-// index.ts
-import { Client, GatewayIntentBits, EmbedBuilder, TextChannel, ActivityType } from "discord.js";
-import pg from "pg";
-import { DateTime } from "luxon";
-import { startPatreonPgListener } from "./src/patreon-listener";
-
-// --- ENV ---
-const DISCORD_TOKEN = process.env.DISCORD_TOKEN!;
-const OWNER_ID = process.env.OWNER_ID!;
-const DIRECT_DATABASE_URL = process.env.DIRECT_DATABASE_URL!;
->>>>>>> 60f390bfd805996c553d760e6564abb644238bd4
 const PATREON_CHANNEL_ID = process.env.PATREON_CHANNEL_ID!;
 
-// --- Discord client ---
 const client = new Client({
-<<<<<<< HEAD
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.DirectMessages,
-    GatewayIntentBits.GuildMembers, // needed for guildMemberAdd
+    GatewayIntentBits.GuildMembers,
   ],
 });
 
 // --- Ready: start listeners ---
 client.once("clientReady", () => {
-  console.log(`Logged in as ${client.user?.tag}`);
-
-  // DB LISTEN for sessions_paid
-  startSessionListener();
-
-  // Patreon listener
-  startPatreonPgListener(client);
-
-  // When someone joins, try to deliver any pending DM
-  client.on("guildMemberAdd", handlePendingDMOnJoin);
-});
-
-// When sessions_paid happens in DB
-sessionEvents.on("sessionPaid", async (payload) => {
-  notifyOwner(client, payload);
-  notifyStudent(client, payload);
-=======
-  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.DirectMessages],
-});
-
-// --- PG LISTEN/NOTIFY for sessions_paid ---
-const { Client: PgClient } = pg;
-let pgClient: pg.Client | null = null;
-
-async function connectPgSessions() {
-  if (pgClient) {
-    try { await pgClient.end(); } catch {}
-  }
-  pgClient = new PgClient({ connectionString: DIRECT_DATABASE_URL });
-
-  pgClient.on("error", (err) => {
-    console.error("[PG][sessions_paid] error", err);
-    setTimeout(connectPgSessions, 5000);
-  });
-
-  await pgClient.connect();
-  await pgClient.query("LISTEN sessions_paid");
-  console.log("[PG] listening on sessions_paid");
-
-  pgClient.on("notification", async (msg) => {
-    if (msg.channel !== "sessions_paid" || !msg.payload) return;
-    console.log("[PG] payload:", msg.payload);
-    let payload: any;
-    try { payload = JSON.parse(msg.payload); } catch { return; }
-    await handleSessionPaid(payload);
-  });
-}
-
-async function handleSessionPaid(p: any) {
-  const owner = await client.users.fetch(OWNER_ID).catch(() => null);
-  if (!owner) return;
-
-  const { studentName, studentDiscord, riotTag, scheduledStart, scheduledMinutes, sessionType, notes } = p;
-
-  const dt = DateTime.fromISO(scheduledStart, { zone: "Europe/Berlin" });
-  const timeFormatted = `${dt.toFormat("dd LLL")}\n${dt.toFormat("HH:mm")}`;
-
-  const embed = new EmbedBuilder()
-    .setTitle(sessionType === "Custom Session" ? `New Custom Session [${scheduledMinutes} min]` : `New ${sessionType}`)
-    .addFields(
-      { name: "Student", value: studentDiscord ? `<@${studentDiscord}>` : (studentName || "—"), inline: false },
-      { name: "Time", value: timeFormatted, inline: false },
-      { name: "Riot", value: riotTag ? `[${riotTag}](https://dpm.lol/${riotTag.replace("#", "-")})` : "—", inline: false },
-      { name: "Notes", value: notes || "—", inline: false },
-    );
-
-  await owner.send({ embeds: [embed] });
-}
-
-// --- Ready: start listeners ---
-client.once("ready", () => {
   console.log(`Logged in as ${client.user?.tag}`);
 
   // Presence
@@ -113,27 +27,29 @@ client.once("ready", () => {
     status: "online",
   });
 
-  // Log DB target (sanity check that it matches Vercel)
-  const u = new URL(DIRECT_DATABASE_URL);
-  console.log("[BOT] DB target:", u.host, u.pathname);
+  // Session listener
+  startSessionListener();
 
-  // Start listeners
-  connectPgSessions().catch((e) => console.error("[PG] connect error", e));
-  startPatreonPgListener(client).catch((e) => console.error("[PG] patreon start error", e));
->>>>>>> 60f390bfd805996c553d760e6564abb644238bd4
+  // Patreon listener
+  startPatreonPgListener(client);
+
+  // Deliver pending DM on join
+  client.on("guildMemberAdd", handlePendingDMOnJoin);
+});
+
+// When session is paid
+sessionEvents.on("sessionPaid", async (payload) => {
+  notifyOwner(client, payload);
+  notifyStudent(client, payload);
 });
 
 // --- Login ---
 client.login(DISCORD_TOKEN);
 
-// (optional) helper
+// Helper
 export async function postToPatreonChannel(content: string) {
   const ch = await client.channels.fetch(PATREON_CHANNEL_ID).catch(() => null);
-<<<<<<< HEAD
   if (ch && ch.isTextBased()) {
     await (ch as TextChannel).send({ content });
   }
-=======
-  if (ch && ch.isTextBased()) await (ch as TextChannel).send({ content });
->>>>>>> 60f390bfd805996c553d760e6564abb644238bd4
 }
