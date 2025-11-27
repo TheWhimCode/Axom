@@ -33,7 +33,7 @@ export async function notifyStudent(
     `📅 **Date:** <t:${unix}:D>`,
     `⏰ **Time:** <t:${unix}:t> \`[your timezone]\``,
     ``,
-    `I will send you a little reminder a few hours before the session! :mage:`,
+    `I will send you a little reminder a few hours before the session! :man_mage:`,
     `If you have questions at all, please reach out to Sho directly (he doesn't mind).`,
     ``,
     `**We're looking forward to working with you!** 🥰`
