@@ -12,7 +12,9 @@ import { startPatreonPgListener } from "./src/listener/patreon-listener";
 import { startSessionListener, sessionEvents } from "./src/listener/sessionPaid";
 import { notifyOwner } from "./src/services/coaching-related/bookingDM";
 import { notifyStudent } from "./src/services/coaching-related/studentConfirmDM";
-import { handlePendingDMOnJoin } from "./src/services/coaching-related/joinServerHold";
+import { startTimeCheckCron } from "./src/cron/timeCheck";
+import { storePendingDM, handlePendingDMOnJoin } from "./src/services/coaching-related/storeConfirmation";
+import { registerDMListener } from "./src/listener/receivedDM";  // <-- NEW
 
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN!;
 const PATREON_CHANNEL_ID = process.env.PATREON_CHANNEL_ID!;
@@ -23,6 +25,7 @@ const client = new Client({
     GatewayIntentBits.Guilds,
     GatewayIntentBits.DirectMessages,
     GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.MessageContent,   // <-- IMPORTANT for reading user DMs
   ],
   partials: [Partials.Channel],
 });
@@ -30,8 +33,6 @@ const client = new Client({
 // --- Ready: start listeners ---
 client.once(Events.ClientReady, () => {
   console.log(`Logged in as ${client.user?.tag}`);
-
-  // only keep this one useful log
   console.log("Connected to DB:", DIRECT_DATABASE_URL);
 
   client.user?.setPresence({
@@ -39,14 +40,27 @@ client.once(Events.ClientReady, () => {
     status: "online",
   });
 
+  // start listeners
   startSessionListener();
   startPatreonPgListener(client);
+  startTimeCheckCron(client);
+
+  // register DM listener
+  registerDMListener(client);  // <-- NEW
 
   client.on("guildMemberAdd", handlePendingDMOnJoin);
 
   sessionEvents.on("sessionPaid", async (payload) => {
     notifyOwner(client, payload);
-    notifyStudent(client, payload);
+
+    const success = await notifyStudent(client, payload);
+
+    if (!success && payload.discordId) {
+      await storePendingDM(
+        payload.discordId,
+        `Session booked: ${payload.sessionType} @ ${payload.scheduledStart}`
+      );
+    }
   });
 });
 

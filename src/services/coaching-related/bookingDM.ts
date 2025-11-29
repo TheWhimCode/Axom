@@ -2,6 +2,7 @@
 
 import { EmbedBuilder, type Client } from "discord.js";
 import { DateTime } from "luxon";
+import { parseUTCString } from "../../helper/utcFixer";
 
 const OWNER_ID = process.env.OWNER_ID!;
 
@@ -29,11 +30,12 @@ export async function notifyOwner(client: Client, p: BookingPayload) {
     notes,
   } = p;
 
-  const dt = DateTime.fromISO(scheduledStart, { zone: "Europe/Berlin" });
-  const formattedTime = `${dt.toFormat("dd LLL")}\n${dt.toFormat("HH:mm")}`;
+  // Always normalize timestamps properly
+  const dt = parseUTCString(scheduledStart);
+  const unix = Math.floor(dt.toSeconds());
 
   const embed = new EmbedBuilder()
-    .setColor(0x57F287)
+    .setColor(0x57f287)
     .setTitle(
       sessionType === "Custom Session"
         ? `New Custom Session [${scheduledMinutes} min]`
@@ -42,19 +44,18 @@ export async function notifyOwner(client: Client, p: BookingPayload) {
     .addFields(
       {
         name: "Student",
-        value: discordId
-          ? `<@${discordId}>`
-          : studentName || "—",
+        value: discordId ? `<@${discordId}>` : (studentName || "—"),
       },
       {
         name: "Time",
-        value: formattedTime,
+        value: `<t:${unix}:F>`, // Auto-localized for viewer
       },
       {
         name: "Riot",
-        value: riotTag
-          ? `[${riotTag}](https://dpm.lol/${riotTag.replace("#", "-")})`
-          : "—",
+value: riotTag
+  ? `[${riotTag}](https://dpm.lol/${encodeURIComponent(riotTag.replace("#", "-"))})`
+  : "—",
+
       },
       {
         name: "Notes",

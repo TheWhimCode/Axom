@@ -2,6 +2,7 @@
 import type { Client } from "discord.js";
 import { DateTime } from "luxon";
 import type { BookingPayload } from "./bookingDM";
+import { parseUTCString } from "../../helper/utcFixer";
 
 export async function notifyStudent(
   client: Client,
@@ -9,7 +10,6 @@ export async function notifyStudent(
 ): Promise<boolean> {
 
   const {
-    studentName,
     discordId,
     scheduledStart,
     scheduledMinutes,
@@ -21,22 +21,26 @@ export async function notifyStudent(
   const user = await client.users.fetch(discordId).catch(() => null);
   if (!user) return false;
 
-  // Convert to unix timestamp (UTC-safe)
-  const unix = Math.floor(DateTime.fromISO(scheduledStart).toSeconds());
+  // Always use Discord display name now
+  const name = user.globalName;
+
+  // scheduledStart is always a string here
+  const dt = parseUTCString(scheduledStart);
+  const unix = Math.floor(dt.toSeconds());
 
   const msg = [
-    `> **HEY ${studentName || "THERE"}!**`,
+    `> **HEY ${name}!**`,
     `> You just booked a **${sessionType}** with Sho! :partying_face:`,
     ``,
     `Here are some useful details:`,
-    `:pencil: **Info:** \`${scheduledMinutes} minutes\``,
+    `:pencil: **Length:** \`${scheduledMinutes} minutes\``,
     `📅 **Date:** <t:${unix}:D>`,
     `⏰ **Time:** <t:${unix}:t> \`[your timezone]\``,
     ``,
-    `I will send you a little reminder a few hours before the session! :mage:`,
+    `I will send you a *little reminder* a few hours before the session! :mage:`,
     `If you have questions at all, please reach out to Sho directly (he doesn't mind).`,
     ``,
-    `**We're looking forward to working with you!** 🥰`
+    `**We're looking forward to working with you! 🥰**`
   ].join("\n");
 
   try {
