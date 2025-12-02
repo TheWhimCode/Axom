@@ -1,4 +1,4 @@
-// src/services/coaching-related/joinServerHold.ts
+// src/services/coaching-related/storeConfirmation.ts
 
 import { Pool } from "pg";
 import type { GuildMember } from "discord.js";
@@ -8,18 +8,33 @@ const pool = new Pool({
   ssl: true,
 });
 
-// --- DB helpers ---
+// --- STORE the DM when it fails ---
+export async function storePendingDM(discordId: string, message: string) {
+  await pool.query(
+    `
+      INSERT INTO "PendingConfirmationDM" ("discordId", "message")
+      VALUES ($1, $2)
+      ON CONFLICT ("discordId") DO UPDATE
+      SET "message" = EXCLUDED."message",
+          "createdAt" = now()
+    `,
+    [discordId, message]
+  );
+}
+
+// --- READ helper ---
 async function getPendingDM(discordId: string) {
   const res = await pool.query(
-    `SELECT message FROM pending_confirmation_DM WHERE discord_id = $1`,
+    `SELECT "message" FROM "PendingConfirmationDM" WHERE "discordId" = $1`,
     [discordId]
   );
   return res.rows[0]?.message ?? null;
 }
 
+// --- DELETE helper ---
 async function removePendingDM(discordId: string) {
   await pool.query(
-    `DELETE FROM pending_confirmation_DM WHERE discord_id = $1`,
+    `DELETE FROM "PendingConfirmationDM" WHERE "discordId" = $1`,
     [discordId]
   );
 }
@@ -33,9 +48,7 @@ export async function handlePendingDMOnJoin(member: GuildMember) {
 
   try {
     await member.send(msg);
-  } catch {
-    // optional: silently fail or log
-  }
+  } catch {}
 
   await removePendingDM(discordId);
 }
