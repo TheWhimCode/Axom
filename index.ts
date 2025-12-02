@@ -14,7 +14,8 @@ import { notifyOwner } from "./src/services/coaching-related/bookingDM";
 import { notifyStudent } from "./src/services/coaching-related/studentConfirmDM";
 import { startTimeCheckCron } from "./src/cron/timeCheck";
 import { storePendingDM, handlePendingDMOnJoin } from "./src/services/coaching-related/storeConfirmation";
-import { registerDMListener } from "./src/listener/receivedDM";  // <-- NEW
+import { registerDMListener } from "./src/listener/receivedDM";
+import { startTwitchLiveChecker } from "./src/services/notifiers/Twitch";
 
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN!;
 const PATREON_CHANNEL_ID = process.env.PATREON_CHANNEL_ID!;
@@ -25,7 +26,7 @@ const client = new Client({
     GatewayIntentBits.Guilds,
     GatewayIntentBits.DirectMessages,
     GatewayIntentBits.GuildMembers,
-    GatewayIntentBits.MessageContent,   // <-- IMPORTANT for reading user DMs
+    GatewayIntentBits.MessageContent, // Needed for user DMs
   ],
   partials: [Partials.Channel],
 });
@@ -40,16 +41,19 @@ client.once(Events.ClientReady, () => {
     status: "online",
   });
 
-  // start listeners
+  // Start listeners
   startSessionListener();
   startPatreonPgListener(client);
   startTimeCheckCron(client);
+  registerDMListener(client);
 
-  // register DM listener
-  registerDMListener(client);  // <-- NEW
+  // ★ NEW — Start Twitch Live Checker
+  startTwitchLiveChecker(client);
 
+  // For queued DM sends
   client.on("guildMemberAdd", handlePendingDMOnJoin);
 
+  // Handle sessionPaid event
   sessionEvents.on("sessionPaid", async (payload) => {
     notifyOwner(client, payload);
 
@@ -67,7 +71,7 @@ client.once(Events.ClientReady, () => {
 // --- Login ---
 client.login(DISCORD_TOKEN);
 
-// Helper
+// Helper function
 export async function postToPatreonChannel(content: string) {
   const ch = await client.channels.fetch(PATREON_CHANNEL_ID).catch(() => null);
   if (ch && ch.isTextBased()) {
