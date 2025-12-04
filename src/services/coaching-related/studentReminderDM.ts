@@ -24,6 +24,7 @@ export async function notifyStudentReminder(
   } = p;
 
   if (!discordId) return false;
+if (!coupon) return false; // or handle differently
 
   const user = await client.users.fetch(discordId).catch(() => null);
   if (!user) return false;

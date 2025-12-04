@@ -9,11 +9,8 @@ import {
 } from "discord.js";
 
 import { startPatreonPgListener } from "./src/listener/patreon-listener";
-import { startSessionListener, sessionEvents } from "./src/listener/sessionPaid";
-import { notifyOwner } from "./src/services/coaching-related/bookingDM";
-import { notifyStudent } from "./src/services/coaching-related/studentConfirmDM";
+import { startSessionListener } from "./src/listener/sessionPaid";
 import { startTimeCheckCron } from "./src/cron/timeCheck";
-import { storePendingDM, handlePendingDMOnJoin } from "./src/services/coaching-related/storeConfirmation";
 import { registerDMListener } from "./src/listener/receivedDM";
 import { startTwitchLiveChecker } from "./src/services/notifiers/Twitch";
 
@@ -42,30 +39,18 @@ client.once(Events.ClientReady, () => {
   });
 
   // Start listeners
-  startSessionListener();
+  startSessionListener(client); // sessionPaid → DMs + DB updates
   startPatreonPgListener(client);
   startTimeCheckCron(client);
   registerDMListener(client);
 
-  // ★ NEW — Start Twitch Live Checker
+  // Twitch Live Checker
   startTwitchLiveChecker(client);
 
-  // For queued DM sends
-  client.on("guildMemberAdd", handlePendingDMOnJoin);
+  // ❌ Removed:
+  // client.on("guildMemberAdd", handlePendingDMOnJoin);
 
-  // Handle sessionPaid event
-  sessionEvents.on("sessionPaid", async (payload) => {
-    notifyOwner(client, payload);
-
-    const success = await notifyStudent(client, payload);
-
-    if (!success && payload.discordId) {
-      await storePendingDM(
-        payload.discordId,
-        `Session booked: ${payload.sessionType} @ ${payload.scheduledStart}`
-      );
-    }
-  });
+  // ❌ No more sessionEvents.on("sessionPaid")
 });
 
 // --- Login ---

@@ -32,6 +32,8 @@ export async function notifyOwner(client: Client, p: BookingPayload) {
 
   // Always normalize timestamps properly
   const dt = parseUTCString(scheduledStart);
+  console.log("SCHEDULED START RECEIVED:", scheduledStart);
+
   const unix = Math.floor(dt.toSeconds());
 
   const embed = new EmbedBuilder()

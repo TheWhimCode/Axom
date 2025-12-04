@@ -48,12 +48,10 @@ export async function notifyStudentFollowup(
 
   const coupon = couponRes.rows[0];
 
-  const dt =
-    scheduledStart instanceof Date
-      ? DateTime.fromJSDate(scheduledStart).toUTC()
-      : parseUTCString(scheduledStart);
+  // ISSUE 1 FIX — ensure coupon exists
+  if (!coupon) return false;
 
-  const unix = Math.floor(dt.toSeconds());
+  // ISSUE 3 FIX — remove timestamp logic entirely
 
   const msg = [
     `> **HEY ${studentName || "THERE"}!**`,
