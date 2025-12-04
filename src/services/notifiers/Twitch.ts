@@ -105,17 +105,17 @@ async function handleLiveEvent(client: Client, title: string, thumbnail: string)
 
   // 2) Make channel PUBLIC
   await safeAction(() =>
-    guildChannel.permissionOverwrites.edit(everyone, { ViewChannel: true })
+    guildChannel.permissionOverwrites.edit(everyone.id, { ViewChannel: true })
   );
 
   // ---------------------------------------------
   // 🔥 3) WAIT for Twitch thumbnail to generate
   // ---------------------------------------------
-  await new Promise((res) => setTimeout(res, 5000));
 
-  const finalThumb = thumbnail
-    .replace("{width}", "1280")
-    .replace("{height}", "720");
+const finalThumb =
+  thumbnail.replace("{width}", "1280").replace("{height}", "720") +
+  `?t=${Date.now()}`;
+
 
   // ---------------------------------------------
   // 4) Send embed + button
@@ -144,10 +144,7 @@ async function handleLiveEvent(client: Client, title: string, thumbnail: string)
     );
   }
 
-  // 5) Make channel PRIVATE again
-  await safeAction(() =>
-    guildChannel.permissionOverwrites.edit(everyone, { ViewChannel: false })
-  );
+
 }
 
 // ---------------------------------------------
@@ -168,7 +165,7 @@ async function handleOfflineEvent(client: Client) {
 
   // Keep private
   await safeAction(() =>
-    guildChannel.permissionOverwrites.edit(everyone, { ViewChannel: false })
+    guildChannel.permissionOverwrites.edit(everyone.id, { ViewChannel: false })
   );
 }
 
