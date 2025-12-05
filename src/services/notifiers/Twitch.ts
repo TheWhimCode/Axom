@@ -116,6 +116,7 @@ const finalThumb =
   thumbnail.replace("{width}", "1280").replace("{height}", "720") +
   `?t=${Date.now()}`;
 
+await new Promise(res => setTimeout(res, 15000)); 
 
   // ---------------------------------------------
   // 4) Send embed + button
@@ -134,9 +135,9 @@ const finalThumb =
         embeds: [
           {
             title: "SHO IS LIVE AGAIN!! 🎉",
-            description: ":star: Let's improve together!",
+            description: title,
             color: 0x9146ff,
-            thumbnail: { url: finalThumb },
+    image: { url: finalThumb },      // <-- large preview
           },
         ],
         components: [button],
