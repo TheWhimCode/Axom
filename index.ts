@@ -31,7 +31,6 @@ const client = new Client({
 // --- Ready: start listeners ---
 client.once(Events.ClientReady, () => {
   console.log(`Logged in as ${client.user?.tag}`);
-  console.log("Connected to DB:", DIRECT_DATABASE_URL);
 
   client.user?.setPresence({
     activities: [{ name: "I AM A BUTTERFLY", type: ActivityType.Watching }],
