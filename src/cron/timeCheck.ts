@@ -62,7 +62,7 @@ async function checkUpcomingSessions(client: Client) {
     const ok = await notifyStudentReminder(client, {
       studentName,
       discordId: row.discordId,
-      scheduledStart: row.scheduledStart,
+      scheduledStart: row.scheduledStart.toISOString(), // ← FIXED
       scheduledMinutes: row.scheduledMinutes,
       sessionType: row.sessionType,
     });
@@ -111,7 +111,7 @@ async function checkPastSessions(client: Client) {
     const ok = await notifyStudentFollowup(client, {
       studentName,
       discordId: row.discordId,
-      scheduledStart: row.scheduledStart,
+      scheduledStart: row.scheduledStart.toISOString(), // ← FIXED
       scheduledMinutes: row.scheduledMinutes,
       sessionType: row.sessionType,
     });
@@ -155,11 +155,10 @@ async function checkUnsentPaymentDMs(client: Client) {
       discordId: row.discordId,
       studentName: null,
       riotTag: row.riotTag,
-  scheduledStart: row.scheduledStart.toISOString(),  // ← FIX
+      scheduledStart: row.scheduledStart.toISOString(), // already FIXED
       scheduledMinutes: row.scheduledMinutes,
       sessionType: row.sessionType,
-  notes: row.notes ?? null,    // ← FIX
-      
+      notes: row.notes ?? null,
     };
 
     // Send student confirmation if missing
@@ -189,7 +188,7 @@ async function checkUnsentPaymentDMs(client: Client) {
 async function runTimeChecks(client: Client) {
   await checkUpcomingSessions(client);
   await checkPastSessions(client);
-  await checkUnsentPaymentDMs(client); // NEW
+  await checkUnsentPaymentDMs(client);
 }
 
 export function startTimeCheckCron(client: Client) {
