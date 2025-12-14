@@ -2,7 +2,6 @@
 
 import { EmbedBuilder, type Client } from "discord.js";
 import { DateTime } from "luxon";
-import { parseUTCString } from "../../helper/utcFixer";
 
 const OWNER_ID = process.env.OWNER_ID!;
 
@@ -30,8 +29,8 @@ export async function notifyOwner(client: Client, p: BookingPayload) {
     notes,
   } = p;
 
-  // Always normalize timestamps properly
-  const dt = parseUTCString(scheduledStart);
+  // scheduledStart is ISO UTC (e.g. 2025-12-14T19:00:00.000Z)
+  const dt = DateTime.fromISO(scheduledStart);
   console.log("SCHEDULED START RECEIVED:", scheduledStart);
 
   const unix = Math.floor(dt.toSeconds());
@@ -54,10 +53,11 @@ export async function notifyOwner(client: Client, p: BookingPayload) {
       },
       {
         name: "Riot",
-value: riotTag
-  ? `[${riotTag}](https://dpm.lol/${encodeURIComponent(riotTag.replace("#", "-"))})`
-  : "—",
-
+        value: riotTag
+          ? `[${riotTag}](https://dpm.lol/${encodeURIComponent(
+              riotTag.replace("#", "-")
+            )})`
+          : "—",
       },
       {
         name: "Notes",

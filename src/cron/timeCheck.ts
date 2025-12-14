@@ -33,23 +33,22 @@ function wait(ms: number) {
 // 1) REMINDERS — 6h BEFORE (PAID sessions only)
 // -------------------------------------------------------
 async function checkUpcomingSessions(client: Client) {
-  const res = await pool.query<SessionRow>(
-    `
-      SELECT
-        id,
-        "riotTag",
-        "discordId",
-        "scheduledStart",
-        "scheduledMinutes",
-        "sessionType",
-        "reminderSent",
-        "followupSent"
-      FROM "Session"
-      WHERE status = 'paid'
-        AND "scheduledStart" BETWEEN NOW() AND NOW() + interval '6 hours'
-        AND "reminderSent" = FALSE
-    `
-  );
+  const res = await pool.query<SessionRow>(`
+    SELECT
+      id,
+      "riotTag",
+      "discordId",
+      ("scheduledStart" AT TIME ZONE 'UTC') AS "scheduledStart",
+      "scheduledMinutes",
+      "sessionType",
+      "reminderSent",
+      "followupSent"
+    FROM "Session"
+    WHERE status = 'paid'
+      AND ("scheduledStart" AT TIME ZONE 'UTC')
+            BETWEEN NOW() AND NOW() + interval '6 hours'
+      AND "reminderSent" = FALSE
+  `);
 
   for (const row of res.rows) {
     let studentName: string | null = null;
@@ -62,7 +61,7 @@ async function checkUpcomingSessions(client: Client) {
     const ok = await notifyStudentReminder(client, {
       studentName,
       discordId: row.discordId,
-      scheduledStart: row.scheduledStart.toISOString(), // ← FIXED
+      scheduledStart: row.scheduledStart.toISOString(),
       scheduledMinutes: row.scheduledMinutes,
       sessionType: row.sessionType,
     });
@@ -80,25 +79,23 @@ async function checkUpcomingSessions(client: Client) {
 // 2) FOLLOWUPS — 2–48h AFTER (PAID sessions only)
 // -------------------------------------------------------
 async function checkPastSessions(client: Client) {
-  const res = await pool.query<SessionRow>(
-    `
-      SELECT
-        id,
-        "riotTag",
-        "discordId",
-        "scheduledStart",
-        "scheduledMinutes",
-        "sessionType",
-        "reminderSent",
-        "followupSent"
-      FROM "Session"
-      WHERE status = 'paid'
-        AND "scheduledStart"
-          BETWEEN NOW() - interval '48 hours'
-          AND NOW() - interval '2 hours'
-        AND "followupSent" = FALSE
-    `
-  );
+  const res = await pool.query<SessionRow>(`
+    SELECT
+      id,
+      "riotTag",
+      "discordId",
+      ("scheduledStart" AT TIME ZONE 'UTC') AS "scheduledStart",
+      "scheduledMinutes",
+      "sessionType",
+      "reminderSent",
+      "followupSent"
+    FROM "Session"
+    WHERE status = 'paid'
+      AND ("scheduledStart" AT TIME ZONE 'UTC')
+            BETWEEN NOW() - interval '48 hours'
+                AND NOW() - interval '2 hours'
+      AND "followupSent" = FALSE
+  `);
 
   for (const row of res.rows) {
     let studentName: string | null = null;
@@ -111,7 +108,7 @@ async function checkPastSessions(client: Client) {
     const ok = await notifyStudentFollowup(client, {
       studentName,
       discordId: row.discordId,
-      scheduledStart: row.scheduledStart.toISOString(), // ← FIXED
+      scheduledStart: row.scheduledStart.toISOString(),
       scheduledMinutes: row.scheduledMinutes,
       sessionType: row.sessionType,
     });
@@ -132,30 +129,28 @@ async function checkPastSessions(client: Client) {
 // 3) PAYMENT DMs missed if bot/server was offline
 // -------------------------------------------------------
 async function checkUnsentPaymentDMs(client: Client) {
-  const res = await pool.query<SessionRow>(
-    `
-      SELECT
-        id,
-        "discordId",
-        "riotTag",
-        "sessionType",
-        "scheduledStart",
-        "scheduledMinutes",
-        "notes",
-        "confirmationSent",
-        "bookingOwnerSent"
-      FROM "Session"
-      WHERE status = 'paid'
-        AND ("confirmationSent" = FALSE OR "bookingOwnerSent" = FALSE)
-    `
-  );
+  const res = await pool.query<SessionRow>(`
+    SELECT
+      id,
+      "discordId",
+      "riotTag",
+      "sessionType",
+      ("scheduledStart" AT TIME ZONE 'UTC') AS "scheduledStart",
+      "scheduledMinutes",
+      "notes",
+      "confirmationSent",
+      "bookingOwnerSent"
+    FROM "Session"
+    WHERE status = 'paid'
+      AND ("confirmationSent" = FALSE OR "bookingOwnerSent" = FALSE)
+  `);
 
   for (const row of res.rows) {
     const payload = {
       discordId: row.discordId,
       studentName: null,
       riotTag: row.riotTag,
-      scheduledStart: row.scheduledStart.toISOString(), // already FIXED
+      scheduledStart: row.scheduledStart.toISOString(),
       scheduledMinutes: row.scheduledMinutes,
       sessionType: row.sessionType,
       notes: row.notes ?? null,

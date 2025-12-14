@@ -2,7 +2,6 @@
 import type { Client } from "discord.js";
 import { DateTime } from "luxon";
 import type { BookingPayload } from "./bookingDM";
-import { parseUTCString } from "../../helper/utcFixer";
 
 export async function notifyStudent(
   client: Client,
@@ -24,8 +23,8 @@ export async function notifyStudent(
   // Always use Discord display name now
   const name = user.globalName;
 
-  // scheduledStart is always a string here
-  const dt = parseUTCString(scheduledStart);
+  // scheduledStart is ISO UTC (e.g. 2025-12-14T19:00:00.000Z)
+  const dt = DateTime.fromISO(scheduledStart);
   const unix = Math.floor(dt.toSeconds());
 
   const msg = [
