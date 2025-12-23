@@ -1,7 +1,5 @@
 // src/services/coaching-related/studentFollowupDM.ts
 import type { Client } from "discord.js";
-import { DateTime } from "luxon";
-import { parseUTCString } from "../../helper/utcFixer";
 import { Pool } from "pg";
 
 const pool = new Pool({
@@ -21,20 +19,14 @@ export async function notifyStudentFollowup(
   client: Client,
   p: FollowupPayload
 ): Promise<boolean> {
-  const {
-    studentName,
-    discordId,
-    scheduledStart,
-    scheduledMinutes,
-    sessionType,
-  } = p;
+  const { studentName, discordId } = p;
 
   if (!discordId) return false;
 
   const user = await client.users.fetch(discordId).catch(() => null);
   if (!user) return false;
 
-  // Correct way to fetch coupon (via Student)
+  // Fetch coupon via Student
   const couponRes = await pool.query(
     `
       SELECT c.code, c.value
@@ -47,23 +39,19 @@ export async function notifyStudentFollowup(
   );
 
   const coupon = couponRes.rows[0];
-
-  // ISSUE 1 FIX — ensure coupon exists
   if (!coupon) return false;
-
-  // ISSUE 3 FIX — remove timestamp logic entirely
 
   const msg = [
     `> **HEY ${studentName || "THERE"}!**`,
     `> How are you feeling after the session? 😊`,
-    `It’s totally normal to feel like your head is full of ideas :face_with_spiral_eyes: — just remember to focus on *1–2 things at a time*. That's how you can actually **feel** that progress and build good habits. :sparkles:`,
+    `It’s totally normal to feel like your head is full of ideas :face_with_spiral_eyes: — just focus on *1–2 things at a time*. That’s how progress actually sticks ✨`,
     ``,
-    `**> I can feel it. WinnsersQ is up ahead! :chart_with_upwards_trend:**`,
+    `**> I can feel it. WinnersQ is up ahead! 📈**`,
     `Sho told me to give you this code — **\`${coupon.code}\`**!`,
     `It gives you **${coupon.value}€** off your next coaching session.`,
-    `If a friend uses your code, they also get 5€ off, and your code gets a one-time 5€ upgrade too :scream:`,
+    `If a friend uses your code, they also get 5€ off — and your code gets a one-time 5€ upgrade 😱`,
     ``,
-    `If you have any thoughts about the session or want to leave a review, just reply **right here** — even a short message is great! I’ll pass it along. :love_letter: `,
+    `If you have any thoughts about the session or want to leave a review, just reply **right here** — even a short message is perfect 💌`,
   ].join("\n");
 
   try {
