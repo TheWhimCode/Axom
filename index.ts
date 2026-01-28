@@ -8,15 +8,13 @@ import {
   Partials,
 } from "discord.js";
 
-import { startPatreonPgListener } from "./src/listener/patreon-listener";
 import { startSessionListener } from "./src/listener/sessionPaid";
+import { startSessionRescheduledListener } from "./src/listener/sessionRescheduled";
 import { startTimeCheckCron } from "./src/cron/timeCheck";
 import { registerDMListener } from "./src/listener/receivedDM";
 import { startTwitchLiveChecker } from "./src/services/notifiers/Twitch";
 
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN!;
-const PATREON_CHANNEL_ID = process.env.PATREON_CHANNEL_ID!;
-const DIRECT_DATABASE_URL = process.env.DIRECT_DATABASE_URL!;
 
 const client = new Client({
   intents: [
@@ -38,8 +36,8 @@ client.once(Events.ClientReady, () => {
   });
 
   // Start listeners
-  startSessionListener(client); // sessionPaid → DMs + DB updates
-  startPatreonPgListener(client);
+  startSessionListener(client);            // sessions_paid → DMs + DB updates
+  startSessionRescheduledListener(client); // sessions_rescheduled → DMs
   startTimeCheckCron(client);
   registerDMListener(client);
 
@@ -47,18 +45,10 @@ client.once(Events.ClientReady, () => {
   startTwitchLiveChecker(client);
 
   // ❌ Removed:
-  // client.on("guildMemberAdd", handlePendingDMOnJoin);
-
-  // ❌ No more sessionEvents.on("sessionPaid")
+  // startPatreonPgListener
+  // Patreon channel helpers
+  // guildMemberAdd logic
 });
 
 // --- Login ---
 client.login(DISCORD_TOKEN);
-
-// Helper function
-export async function postToPatreonChannel(content: string) {
-  const ch = await client.channels.fetch(PATREON_CHANNEL_ID).catch(() => null);
-  if (ch && ch.isTextBased()) {
-    await (ch as TextChannel).send({ content });
-  }
-}
