@@ -71,12 +71,20 @@ export function startSessionListener(client: Client) {
     // Fetch the session
     const res = await db.query(
       `
-      SELECT
-        id, status, discordId, riotTag, sessionType,
-        scheduledStart, scheduledMinutes, notes,
-        confirmationSent, bookingOwnerSent
-      FROM "Session"
-      WHERE id = $1
+SELECT
+  id,
+  status,
+  "discordId",
+  "riotTag",
+  "sessionType",
+  "scheduledStart",
+  "scheduledMinutes",
+  "notes",
+  "confirmationSent",
+  "bookingOwnerSent"
+FROM "Session"
+WHERE id = $1
+
       `,
       [sessionId]
     );
@@ -90,7 +98,10 @@ export function startSessionListener(client: Client) {
       discordId: row.discordId,
       studentName: null,
       riotTag: row.riotTag,
-      scheduledStart: row.scheduledStart,
+      scheduledStart:
+        row.scheduledStart instanceof Date
+          ? row.scheduledStart.toISOString()
+          : String(row.scheduledStart),
       scheduledMinutes: row.scheduledMinutes,
       sessionType: row.sessionType,
       notes: row.notes,
