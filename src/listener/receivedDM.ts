@@ -20,6 +20,10 @@ function pickRandomConfirmation(): string {
   return CONFIRM_MESSAGES[i] ?? "Noted!! Will let Sho know :cowboy:";
 }
 
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export function registerDMListener(client: Client) {
   client.on("messageCreate", async (msg: Message) => {
     // Only DM from real users (not bot, not server messages)
@@ -48,9 +52,13 @@ export function registerDMListener(client: Client) {
 
     lastConfirmSent.set(msg.author.id, now);
 
-    // Send randomized confirmation
     try {
-      await msg.author.send(pickRandomConfirmation());
+      const dmChannel = await msg.author.createDM();
+      
+      await dmChannel.sendTyping();   // start typing
+      await sleep(2000);              // wait 2 seconds
+      
+      await dmChannel.send(pickRandomConfirmation());
     } catch {
       // ignore DM failures
     }
