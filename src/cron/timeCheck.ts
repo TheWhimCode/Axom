@@ -14,6 +14,7 @@ type SessionRow = {
   id: string;
   riotTag: string | null;
   discordId: string | null;
+  studentId?: string | null;
   scheduledStart: Date;
   scheduledMinutes: number;
   sessionType: string;
@@ -22,9 +23,9 @@ type SessionRow = {
   confirmationSent?: boolean;
   bookingOwnerSent?: boolean;
   notes: string | null;
+  followups?: number;
 };
 
-// small helper for spacing messages
 function wait(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -36,6 +37,8 @@ async function checkUpcomingSessions(client: Client) {
   const res = await pool.query<SessionRow>(`
     SELECT
       id,
+      "studentId",
+      "followups",
       "riotTag",
       "discordId",
       ("scheduledStart" AT TIME ZONE 'UTC') AS "scheduledStart",
@@ -57,6 +60,10 @@ async function checkUpcomingSessions(client: Client) {
       const user = await client.users.fetch(row.discordId).catch(() => null);
       studentName = user?.globalName ?? null;
     }
+
+    console.log(
+      `[REMINDER] session=${row.id} discord=${row.discordId} followups=${row.followups ?? 0}`
+    );
 
     const ok = await notifyStudentReminder(client, {
       studentName,
@@ -82,6 +89,8 @@ async function checkPastSessions(client: Client) {
   const res = await pool.query<SessionRow>(`
     SELECT
       id,
+      "studentId",
+      "followups",
       "riotTag",
       "discordId",
       ("scheduledStart" AT TIME ZONE 'UTC') AS "scheduledStart",
@@ -105,6 +114,10 @@ async function checkPastSessions(client: Client) {
       studentName = user?.globalName ?? null;
     }
 
+    console.log(
+      `[FOLLOWUP] session=${row.id} discord=${row.discordId} followups=${row.followups ?? 0}`
+    );
+
     const ok = await notifyStudentFollowup(client, {
       studentName,
       discordId: row.discordId,
@@ -120,7 +133,6 @@ async function checkPastSessions(client: Client) {
       );
     }
 
-    // ⭐ rate limit follow-up DMs to 1 per 5 minutes
     await wait(5 * 60 * 1000);
   }
 }
@@ -132,6 +144,8 @@ async function checkUnsentPaymentDMs(client: Client) {
   const res = await pool.query<SessionRow>(`
     SELECT
       id,
+      "studentId",
+      "followups",
       "discordId",
       "riotTag",
       "sessionType",
@@ -146,6 +160,28 @@ async function checkUnsentPaymentDMs(client: Client) {
   `);
 
   for (const row of res.rows) {
+
+    // Count paid sessions
+    let paidCount = 0;
+
+    if (row.studentId) {
+      const countRes = await pool.query<{ count: number }>(
+        `
+        SELECT COUNT(*)::int AS count
+        FROM "Session"
+        WHERE status = 'paid'
+          AND "studentId" = $1
+        `,
+        [row.studentId]
+      );
+
+      paidCount = countRes.rows[0]?.count ?? 0;
+    }
+
+    console.log(
+      `[CONFIRMATION] session=${row.id} discord=${row.discordId} paidCount=${paidCount} followups=${row.followups ?? 0}`
+    );
+
     const payload = {
       discordId: row.discordId,
       studentName: null,
@@ -154,9 +190,10 @@ async function checkUnsentPaymentDMs(client: Client) {
       scheduledMinutes: row.scheduledMinutes,
       sessionType: row.sessionType,
       notes: row.notes ?? null,
+      paidCount,
+      followups: row.followups ?? 0,
     };
 
-    // Send student confirmation if missing
     if (row.confirmationSent === false) {
       const ok = await notifyStudent(client, payload);
       if (ok) {
@@ -167,7 +204,6 @@ async function checkUnsentPaymentDMs(client: Client) {
       }
     }
 
-    // Send owner DM if missing
     if (row.bookingOwnerSent === false) {
       await notifyOwner(client, payload);
       await pool.query(
@@ -187,7 +223,6 @@ async function runTimeChecks(client: Client) {
 }
 
 export function startTimeCheckCron(client: Client) {
-  // run once at startup
   void runTimeChecks(client);
 
   const ONE_HOUR_MS = 60 * 60 * 1000;

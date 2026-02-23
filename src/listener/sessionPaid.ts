@@ -21,7 +21,7 @@ export function startSessionListener(client: Client) {
 
       db = new PgClient({ connectionString: DIRECT_DATABASE_URL });
       await db.connect();
-      await db.query('LISTEN sessions_paid');
+      await db.query("LISTEN sessions_paid");
 
       console.log("[PG] sessions_paid listener ready");
 
@@ -44,10 +44,8 @@ export function startSessionListener(client: Client) {
     try {
       const { sessionId } = JSON.parse(msg.payload);
 
-      // Emit to event listeners
       sessionEvents.emit("sessionPaid", { sessionId });
 
-      // Handle immediately
       await handleSessionPaid(sessionId);
 
     } catch (err) {
@@ -68,31 +66,53 @@ export function startSessionListener(client: Client) {
   async function handleSessionPaid(sessionId: string) {
     if (!db) return;
 
-    // Fetch the session
     const res = await db.query(
       `
 SELECT
   id,
   status,
   "discordId",
+  "studentId",
   "riotTag",
   "sessionType",
   "scheduledStart",
   "scheduledMinutes",
   "notes",
+  "followups",
   "confirmationSent",
   "bookingOwnerSent"
 FROM "Session"
 WHERE id = $1
-
       `,
       [sessionId]
     );
 
     const row = res.rows[0];
     if (!row) return;
+    if (row.status !== "paid") return;
 
-    if (row.status !== "paid") return; // safety check
+    // --------------------------
+    // Count total paid sessions
+    // --------------------------
+    let paidCount = 0;
+
+    if (row.studentId) {
+      const countRes = await db.query<{ count: number }>(
+        `
+        SELECT COUNT(*)::int AS count
+        FROM "Session"
+        WHERE status = 'paid'
+          AND "studentId" = $1
+        `,
+        [row.studentId]
+      );
+
+      paidCount = countRes.rows[0]?.count ?? 0;
+    }
+
+    console.log(
+      `[SESSION PAID] session=${row.id} discord=${row.discordId} paidCount=${paidCount} followups=${row.followups ?? 0}`
+    );
 
     const payload = {
       discordId: row.discordId,
@@ -105,10 +125,14 @@ WHERE id = $1
       scheduledMinutes: row.scheduledMinutes,
       sessionType: row.sessionType,
       notes: row.notes,
+
+      // Context passed cleanly
+      paidCount,
+      followups: row.followups ?? 0,
     };
 
     // --------------------------
-    // Send student confirmation DM
+    // Student confirmation DM
     // --------------------------
     if (!row.confirmationSent) {
       const ok = await notifyStudent(client, payload);
@@ -121,7 +145,7 @@ WHERE id = $1
     }
 
     // --------------------------
-    // Send owner booking DM
+    // Owner booking DM
     // --------------------------
     if (!row.bookingOwnerSent) {
       await notifyOwner(client, payload);

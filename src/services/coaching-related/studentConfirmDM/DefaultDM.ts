@@ -1,11 +1,10 @@
-// src/services/coaching-related/studentConfirmDM.ts
 import type { Client } from "discord.js";
 import { DateTime } from "luxon";
-import type { BookingPayload } from "./bookingDM";
+import type { StudentConfirmPayload } from "./index";
 
-export async function notifyStudent(
+export async function sendDefaultDM(
   client: Client,
-  p: BookingPayload
+  p: StudentConfirmPayload
 ): Promise<boolean> {
 
   const {
