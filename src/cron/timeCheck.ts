@@ -1,7 +1,7 @@
 import { Pool } from "pg";
 import type { Client } from "discord.js";
 import { notifyStudentReminder } from "../services/coaching-related/studentReminderDM";
-import { notifyStudentFollowup } from "../services/coaching-related/studentFollowupDM";
+import { notifyStudentFollowup } from "../services/coaching-related/studentFollowupDM/index";
 import { notifyStudent } from "../services/coaching-related/studentConfirmDM";
 import { notifyOwner } from "../services/coaching-related/bookingDM";
 
@@ -194,15 +194,23 @@ async function checkUnsentPaymentDMs(client: Client) {
       followups: row.followups ?? 0,
     };
 
-    if (row.confirmationSent === false) {
-      const ok = await notifyStudent(client, payload);
-      if (ok) {
-        await pool.query(
-          `UPDATE "Session" SET "confirmationSent" = TRUE WHERE id = $1`,
-          [row.id]
-        );
-      }
-    }
+   if (row.confirmationSent === false) {
+  // claim atomically
+  const claimed = await pool.query(
+    `
+    UPDATE "Session"
+    SET "confirmationSent" = TRUE
+    WHERE id = $1 AND "confirmationSent" = FALSE
+    RETURNING id
+    `,
+    [row.id]
+  );
+
+  if (claimed.rowCount === 1) {
+    
+    await notifyStudent(client, payload);
+  }
+}
 
     if (row.bookingOwnerSent === false) {
       await notifyOwner(client, payload);

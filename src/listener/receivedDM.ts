@@ -3,22 +3,56 @@ import type { Client, Message } from "discord.js";
 
 const INBOX_CHANNEL_ID = process.env.INBOX_CHANNEL_ID!;
 
+// 10 second cooldown per user
+const CONFIRM_COOLDOWN_MS = 10_000;
+const lastConfirmSent = new Map<string, number>();
+
+const CONFIRM_MESSAGES = [
+  "Noted!! Will let Sho know :cowboy:",
+  "Got it — passing this to Sho 🔥",
+  "Received! Sho will see this soon 📬",
+  "Perfect — I’ll make sure Sho checks this :innocent:",
+  "Message received! 👌",
+];
+
+function pickRandomConfirmation(): string {
+  const i = Math.floor(Math.random() * CONFIRM_MESSAGES.length);
+  return CONFIRM_MESSAGES[i] ?? "Noted!! Will let Sho know :cowboy:";
+}
+
 export function registerDMListener(client: Client) {
   client.on("messageCreate", async (msg: Message) => {
-    // Only DM from real users (not the bot, not server messages)
+    // Only DM from real users (not bot, not server messages)
     if (msg.guild || msg.author.bot) return;
 
-    const channel = await client.channels
+    const inboxChannel = await client.channels
       .fetch(INBOX_CHANNEL_ID)
       .catch(() => null);
 
-    if (!channel || !channel.isTextBased()) return;
+    if (!inboxChannel || !inboxChannel.isTextBased()) return;
+    if (!("send" in inboxChannel)) return;
 
-    // Extra guard so TS knows `.send` exists
-    if (!("send" in channel)) return;
-
-    await channel.send({
+    // Forward DM to your private inbox channel
+    await inboxChannel.send({
       content: `**DM from <@${msg.author.id}>**:\n${msg.content || "(no text)"}`,
     });
+
+    // Minimum length requirement (8 characters, ignoring spaces)
+    const content = (msg.content ?? "").trim();
+    if (content.length < 8) return;
+
+    // Cooldown check
+    const now = Date.now();
+    const lastSent = lastConfirmSent.get(msg.author.id) ?? 0;
+    if (now - lastSent < CONFIRM_COOLDOWN_MS) return;
+
+    lastConfirmSent.set(msg.author.id, now);
+
+    // Send randomized confirmation
+    try {
+      await msg.author.send(pickRandomConfirmation());
+    } catch {
+      // ignore DM failures
+    }
   });
 }

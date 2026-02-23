@@ -2,7 +2,7 @@ import type { Client } from "discord.js";
 import { DateTime } from "luxon";
 import type { StudentConfirmPayload } from "./index";
 
-export async function sendDefaultDM(
+export async function sendEloRushDM(
   client: Client,
   p: StudentConfirmPayload
 ): Promise<boolean> {
@@ -25,10 +25,9 @@ export async function sendDefaultDM(
 
   const msg = [
     `> **HEY ${name}!**`,
-    `> You just booked a **${sessionType}** with Sho! :partying_face:`,
+    `> You just booked a **${sessionType}** with Sho! :fire:`,
     ``,
-    `Here are some useful details:`,
-    `:pencil: **Length:** \`${scheduledMinutes} minutes\``,
+    `Here is the date for your first session:`,
     `📅 **Date:** <t:${unix}:D>`,
     `⏰ **Time:** <t:${unix}:t> \`[your timezone]\``,
     ``,

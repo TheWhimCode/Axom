@@ -134,15 +134,18 @@ WHERE id = $1
     // --------------------------
     // Student confirmation DM
     // --------------------------
-    if (!row.confirmationSent) {
-      const ok = await notifyStudent(client, payload);
-      if (ok) {
-        await db.query(
-          `UPDATE "Session" SET "confirmationSent" = TRUE WHERE id = $1`,
-          [sessionId]
-        );
-      }
-    }
+const claimed = await db.query(
+  `UPDATE "Session"
+   SET "confirmationSent" = TRUE
+   WHERE id = $1 AND "confirmationSent" = FALSE
+   RETURNING id`,
+  [sessionId]
+);
+
+if (claimed.rowCount === 1) {
+  
+  await notifyStudent(client, payload);
+}
 
     // --------------------------
     // Owner booking DM
