@@ -28,8 +28,8 @@ async function pickMainDMKind(p: StudentConfirmPayload): Promise<MainDMKind> {
 }
 
 const CLOSING_FIRST = `**We're looking forward to working with you! 🥰**`;
-const CLOSING_SECOND = `**Nice to see you again! — I see you're ready for the next steps! :fire:**`;
-const CLOSING_THIRD_PLUS = `**Welcome back — let's build on last time! 🎯**`;
+const CLOSING_SECOND = `**Nice to see you again! —** I see you're ready for the next steps! :fire:`;
+const CLOSING_THIRD_PLUS = `**Welcome back —** let's build on last time! 🎯`;
 
 function pickClosingLine(p: StudentConfirmPayload): string {
   const n = Number(p.paidCount ?? 0);
