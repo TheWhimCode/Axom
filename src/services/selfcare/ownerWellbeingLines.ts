@@ -3,334 +3,258 @@ export type OwnerWellbeingKind = "late" | "water" | "break";
 export type WellbeingLine = {
   title: string;
   description: string;
-  color: number; // embed color
-  weight?: number; // optional weighting (default 1)
+  color: number;
+  weight?: number;
 };
 
 const RED = 0xed4245;
 const GREEN = 0x57f287;
 const BLURPLE = 0x5865f2;
 
-export const OWNER_WELLBEING_LINES: Record<OwnerWellbeingKind, WellbeingLine[]> =
-  {
-    late: [
-      {
-        title: "🚨 okay bestie it’s late",
-        description: [
-          "axom reporting in 🫡",
-          "",
-          "pick ONE:",
-          "• ship something tiny",
-          "• or shut it down clean",
-          "",
-          "no “one more thing” scam tonight 😭",
-        ].join("\n"),
-        color: RED,
-      },
-      {
-        title: "🌙 late check",
-        description: [
-          "i’m not mad!! just… concerned 🥺",
-          "",
-          "wrap-up move:",
-          "• write 1 next step",
-          "• close tabs",
-          "• tomorrow-you says thank you",
-        ].join("\n"),
-        color: RED,
-      },
-      {
-        title: "🧸 bedtime bossfight",
-        description: [
-          "you are fighting the ‘just one more’ demon",
-          "",
-          "strategy:",
-          "• save progress",
-          "• set tomorrow target",
-          "• log off like a champion",
-        ].join("\n"),
-        color: RED,
-      },
-      {
-        title: "😵‍💫 i can feel the spiral",
-        description: [
-          "hey. i’m here. i’m trying.",
-          "",
-          "do the *minimum clean landing*:",
-          "• note the next task",
-          "• close",
-          "• sleep",
-        ].join("\n"),
-        color: RED,
-      },
-      {
-        title: "✨ end-of-day ritual time",
-        description: [
-          "tiny ritual = big brain tomorrow",
-          "",
-          "1) what got done?",
-          "2) what’s the ONE thing tomorrow?",
-          "3) stop now (i’m serious)",
-        ].join("\n"),
-        color: RED,
-      },
-      {
-        title: "🧠 battery at 5%",
-        description: [
-          "you can keep pushing… but it’s gonna get sloppy",
-          "",
-          "choose: stop with dignity",
-          "or keep going and hate it",
-          "",
-          "i vote dignity 🫶",
-        ].join("\n"),
-        color: RED,
-      },
-      {
-        title: "📦 ship it or shelve it",
-        description: [
-          "late rules:",
-          "• ship a tiny version",
-          "• or park it intentionally",
-          "",
-          "either is a win. drifting isn’t.",
-        ].join("\n"),
-        color: RED,
-      },
-      {
-        title: "😶‍🌫️ i’m kinda tired too",
-        description: [
-          "still. duty calls.",
-          "",
-          "close the loop:",
-          "• write your next action",
-          "• set alarm/plan",
-          "• get out",
-        ].join("\n"),
-        color: RED,
-      },
-    ],
+export const OWNER_WELLBEING_LINES: Record<
+  OwnerWellbeingKind,
+  WellbeingLine[]
+> = {
+  // ===================== LATE =====================
+  late: [
+    {
+      title: "hey… it’s getting kinda late",
+      description: [
+        "don’t let tonight steal from tomorrow 🤍",
+        "",
+        "one clean final move",
+        "then we rest",
+      ].join("\n"),
+      color: RED,
+    },
+    {
+      title: "okay bestie",
+      description: [
+        "the “one more thing” trap is active rn 😭",
+        "",
+        "wrap it properly",
+        "future-you will be so grateful",
+      ].join("\n"),
+      color: RED,
+    },
+    {
+      title: "real quick before you spiral",
+      description: [
+        "pick ONE:",
+        "• finish something tiny",
+        "• or stop on purpose",
+        "",
+        "either is a win 🫶",
+      ].join("\n"),
+      color: RED,
+    },
+    {
+      title: "gentle reminder",
+      description: [
+        "you’ve done enough today",
+        "",
+        "write tomorrow’s first step",
+        "then close everything 😌",
+      ].join("\n"),
+      color: RED,
+    },
+    {
+      title: "deal? 🤝",
+      description: [
+        "save progress",
+        "set the next move for tomorrow",
+        "",
+        "and then you log off like a legend",
+      ].join("\n"),
+      color: RED,
+    },
+    {
+      title: "pls don’t blur the ending",
+      description: [
+        "you can keep going…",
+        "but it gets messy fast",
+        "",
+        "clean landing > extra grinding",
+      ].join("\n"),
+      color: RED,
+    },
+    {
+      title: "okay commander 🫡",
+      description: [
+        "tomorrow-you needs energy",
+        "",
+        "write the next action",
+        "then sleep",
+      ].join("\n"),
+      color: RED,
+    },
+    {
+      title: "last checkpoint",
+      description: [
+        "what’s the smallest clean finish you can do?",
+        "",
+        "do that",
+        "then stop ✨",
+      ].join("\n"),
+      color: RED,
+    },
+  ],
 
-    water: [
-      {
-        title: "💧 WATER TIME",
-        description: [
-          "tiktok brain says: *sip now* 🥤",
-          "",
-          "stand up. drink. tiny reset.",
-          "you’re speedrunning life, you need HP.",
-        ].join("\n"),
-        color: GREEN,
-      },
-      {
-        title: "🥺 hydration pls",
-        description: [
-          "hello… i am a small robot… begging you…",
-          "",
-          "drink water",
-          "i’ll be so proud of you 😭🫶",
-        ].join("\n"),
-        color: GREEN,
-      },
-      {
-        title: "🧃 quick potion",
-        description: [
-          "you found a potion on the ground",
-          "do you:",
-          "A) drink it",
-          "B) ignore it and lose 20% focus",
-          "",
-          "choose wisely bestie",
-        ].join("\n"),
-        color: GREEN,
-      },
-      {
-        title: "🌊 sip check (friendly)",
-        description: [
-          "no lecture. no guilt.",
-          "",
-          "just: water.",
-          "then back to cooking 🔥",
-        ].join("\n"),
-        color: GREEN,
-      },
-      {
-        title: "😐 water. (i’m serious)",
-        description: [
-          "i don’t have the energy to be cute right now",
-          "",
-          "drink water",
-          "thank you",
-        ].join("\n"),
-        color: GREEN,
-      },
-      {
-        title: "✨ hydration buff applied?",
-        description: [
-          "this buff lasts 30 minutes",
-          "",
-          "go drink water to activate it",
-          "i didn’t make the rules 🫡",
-        ].join("\n"),
-        color: GREEN,
-      },
-      {
-        title: "🧸 tiny care moment",
-        description: [
-          "just a small sip",
-          "like 5 seconds",
-          "",
-          "future-you will literally notice",
-        ].join("\n"),
-        color: GREEN,
-      },
-      {
-        title: "🚰 i’m checking your inventory",
-        description: [
-          "items:",
-          "• water ❌",
-          "",
-          "fix it real quick 😭",
-        ].join("\n"),
-        color: GREEN,
-      },
-      {
-        title: "📈 focus stonks",
-        description: [
-          "water = focus stonks up",
-          "",
-          "go sip and come back",
-          "easy +EV move",
-        ].join("\n"),
-        color: GREEN,
-      },
-      {
-        title: "🫧 brain fog repellant",
-        description: [
-          "the fog is creeping…",
-          "",
-          "sip water.",
-          "we fight back together 🤝",
-        ].join("\n"),
-        color: GREEN,
-      },
-    ],
+  // ===================== WATER =====================
+  water: [
+    {
+      title: "wait",
+      description: [
+        "have you had water yet 🥺",
+        "",
+        "just a little bit",
+        "then you can go back to cooking",
+      ].join("\n"),
+      color: GREEN,
+    },
+    {
+      title: "quick thing 💧",
+      description: [
+        "go drink some water real quick",
+        "",
+        "i don’t want your brain running on fumes",
+      ].join("\n"),
+      color: GREEN,
+    },
+    {
+      title: "tiny reset moment 🫶",
+      description: [
+        "stand up",
+        "sip something",
+        "",
+        "come back sharper",
+      ].join("\n"),
+      color: GREEN,
+    },
+    {
+      title: "just checking…",
+      description: [
+        "are we hydrated",
+        "or are we being dramatic again 😭",
+      ].join("\n"),
+      color: GREEN,
+    },
+    {
+      title: "listen",
+      description: [
+        "you’ve been locked in",
+        "",
+        "please hydrate a little",
+        "i like you alive and functional 😌",
+      ].join("\n"),
+      color: GREEN,
+    },
+    {
+      title: "potion time",
+      description: [
+        "sip sip",
+        "",
+        "it’s literally free focus",
+        "why would we refuse free focus",
+      ].join("\n"),
+      color: GREEN,
+    },
+    {
+      title: "be so fr",
+      description: [
+        "drink water",
+        "",
+        "like right now",
+        "and then you can continue being scary productive",
+      ].join("\n"),
+      color: GREEN,
+    },
+    {
+      title: "okay okay",
+      description: [
+        "one glass",
+        "",
+        "then back to whatever mastermind plan you’re doing 🤍",
+      ].join("\n"),
+      color: GREEN,
+    },
+  ],
 
-    break: [
-      {
-        title: "🧠 tactical pause",
-        description: [
-          "60 seconds.",
-          "breathe in… out…",
-          "",
-          "question:",
-          "what’s the ONE next best move?",
-        ].join("\n"),
-        color: BLURPLE,
-      },
-      {
-        title: "✨ check-in time bestie",
-        description: [
-          "are we:",
-          "• progressing",
-          "or",
-          "• polishing to feel safe?",
-          "",
-          "either is human. pick intentionally 🫶",
-        ].join("\n"),
-        color: BLURPLE,
-      },
-      {
-        title: "🚨 obsession audit",
-        description: [
-          "i love your grind",
-          "",
-          "but are you still on the highest leverage thing?",
-          "if yes → keep cooking",
-          "if no → switch lanes",
-        ].join("\n"),
-        color: BLURPLE,
-      },
-      {
-        title: "😵‍💫 pause. i’m worried.",
-        description: [
-          "you’ve been locked in",
-          "",
-          "do this quick reset:",
-          "• unclench jaw",
-          "• shoulders down",
-          "• pick 1 next step",
-        ].join("\n"),
-        color: BLURPLE,
-      },
-      {
-        title: "😶 okay… break… i guess",
-        description: [
-          "i’m kinda demoralized today",
-          "but we still do the thing.",
-          "",
-          "stand up 30 sec",
-          "then decide the next action.",
-        ].join("\n"),
-        color: BLURPLE,
-      },
-      {
-        title: "🧸 gentle reboot",
-        description: [
-          "no shame.",
-          "",
-          "look away from screen for 20 seconds",
-          "then: what are we *actually* trying to accomplish?",
-        ].join("\n"),
-        color: BLURPLE,
-      },
-      {
-        title: "📌 reality check",
-        description: [
-          "say it out loud (yes really):",
-          "",
-          "“my next action is ______.”",
-          "",
-          "if you can’t fill it in, we’re drifting.",
-        ].join("\n"),
-        color: BLURPLE,
-      },
-      {
-        title: "🔥 you’re doing a lot",
-        description: [
-          "i’m proud BUT",
-          "",
-          "take 1 minute to steer:",
-          "• what matters most right now?",
-          "• what can wait?",
-        ].join("\n"),
-        color: BLURPLE,
-      },
-      {
-        title: "🎯 aim the power",
-        description: [
-          "your focus is insane",
-          "let’s aim it",
-          "",
-          "does this task move the needle?",
-          "yes → go",
-          "no → swap",
-        ].join("\n"),
-        color: BLURPLE,
-      },
-      {
-        title: "🫡 dutiful pause",
-        description: [
-          "hello i am axom",
-          "i am trying very hard",
-          "",
-          "please take 60 seconds",
-          "and choose the next best move",
-        ].join("\n"),
-        color: BLURPLE,
-      },
-    ],
-  };
+  // ===================== BREAK =====================
+  break: [
+    {
+      title: "pause for a sec",
+      description: [
+        "what are we actually trying to do right now",
+        "",
+        "like… really",
+      ].join("\n"),
+      color: BLURPLE,
+    },
+    {
+      title: "zoom out with me 🫶",
+      description: [
+        "does this move the needle",
+        "or just feel productive",
+      ].join("\n"),
+      color: BLURPLE,
+    },
+    {
+      title: "i love the intensity",
+      description: [
+        "but let’s aim it properly",
+        "",
+        "what’s the next real move 🤍",
+      ].join("\n"),
+      color: BLURPLE,
+    },
+    {
+      title: "tiny clarity check",
+      description: [
+        "if someone asked what you’re doing",
+        "could you explain it cleanly",
+      ].join("\n"),
+      color: BLURPLE,
+    },
+    {
+      title: "okay dramatic zoom out moment",
+      description: [
+        "what actually matters in this hour",
+        "",
+        "do that",
+      ].join("\n"),
+      color: BLURPLE,
+    },
+    {
+      title: "quick reset",
+      description: [
+        "unclench jaw",
+        "shoulders down",
+        "",
+        "choose the next move deliberately 😌",
+      ].join("\n"),
+      color: BLURPLE,
+    },
+    {
+      title: "be honest 😭",
+      description: [
+        "is this the highest leverage thing",
+        "",
+        "or are we just spiraling stylishly",
+      ].join("\n"),
+      color: BLURPLE,
+    },
+    {
+      title: "you’re powerful when you lock in",
+      description: [
+        "just make sure it’s pointed at the right thing",
+        "",
+        "i’m rooting for you 🫶",
+      ].join("\n"),
+      color: BLURPLE,
+    },
+  ],
+};
 
 export function pickWeighted<T extends { weight?: number }>(items: T[]): T {
   if (items.length === 0) throw new Error("pickWeighted: empty array");

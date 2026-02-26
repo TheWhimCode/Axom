@@ -1,8 +1,6 @@
-// index.ts (at project root)
 import {
   Client,
   GatewayIntentBits,
-  TextChannel,
   ActivityType,
   Events,
   Partials,
@@ -13,9 +11,8 @@ import { startSessionRescheduledListener } from "./src/listener/sessionReschedul
 import { startTimeCheckCron } from "./src/cron/timeCheck";
 import { registerDMListener } from "./src/listener/receivedDM";
 import { startTwitchLiveChecker } from "./src/services/notifiers/Twitch";
-
-// ✅ add this:
 import { startOwnerWellbeingCron } from "./src/cron/selfcare";
+import { startOwnerMorningScheduleCron } from "./src/cron/sessionsToday";
 
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN!;
 
@@ -43,8 +40,11 @@ client.once(Events.ClientReady, () => {
   registerDMListener(client);
   startTwitchLiveChecker(client);
 
-  // ✅ add this:
+  // Your self-care DMs
   startOwnerWellbeingCron(client);
+
+  // Your 8am daily schedule summary
+  startOwnerMorningScheduleCron(client);
 });
 
 client.login(DISCORD_TOKEN);
