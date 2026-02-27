@@ -2,7 +2,7 @@ import type { Client } from "discord.js";
 import { DateTime } from "luxon";
 import type { StudentConfirmPayload } from "./index";
 
-export async function sendEloRushDM(
+export async function sendReturningDM(
   client: Client,
   p: StudentConfirmPayload
 ): Promise<boolean> {
@@ -25,22 +25,14 @@ export async function sendEloRushDM(
 
   const msg = [
     `> **HEY ${name}!**`,
-    `> You just booked a **${sessionType}** with Sho! :fire:`,
+    `> You just booked a **${sessionType}** with Sho! :partying_face:`,
     ``,
-    `Here is the date for your first session:`,
+    `Here are some useful details:`,
+    `:pencil: **Length:** \`${scheduledMinutes} minutes\``,
     `📅 **Date:** <t:${unix}:D>`,
     `⏰ **Time:** <t:${unix}:t> \`[your timezone]\``,
     ``,
-    `:studio_microphone: **How sessions work**`,
-    `Most sessions are held in a Discord **Stage Channel** :satellite:,`,
-    `so others can quietly watch and learn from them.`,
-    `You'll be the only one talking with Sho!! — viewers can't interrupt.`,
-    ``,
-    `If you'd prefer a completely private session instead,`,
-    `just reply here with **"no public session"** — no worries at all.`,
-    ``,
-    `I will send you a *little reminder* a few hours before the session! :mage:`,
-    `If you have questions at all, please reach out to Sho directly (he doesn't mind).`,
+    `As always, I will send you a *little reminder* a few hours before the session! :mage:`,
   ].join("\n");
 
   try {

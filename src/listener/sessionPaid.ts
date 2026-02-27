@@ -23,13 +23,10 @@ export function startSessionListener(client: Client) {
       await db.connect();
       await db.query("LISTEN sessions_paid");
 
-      console.log("[PG] sessions_paid listener ready");
-
       db.on("notification", onNotification);
       db.on("error", onError);
 
-    } catch (err) {
-      console.log("[PG] sessions_paid failed, reconnecting…", err);
+    } catch {
       retry();
     }
   }
@@ -48,13 +45,12 @@ export function startSessionListener(client: Client) {
 
       await handleSessionPaid(sessionId);
 
-    } catch (err) {
-      console.log("[PG] bad JSON in sessions_paid", err);
+    } catch {
+      // intentionally silent
     }
   }
 
   function onError() {
-    console.log("[PG] sessions_paid connection lost, reconnecting…");
     retry();
   }
 
@@ -110,10 +106,6 @@ WHERE id = $1
       paidCount = countRes.rows[0]?.count ?? 0;
     }
 
-    console.log(
-      `[SESSION PAID] session=${row.id} discord=${row.discordId} paidCount=${paidCount} followups=${row.followups ?? 0}`
-    );
-
     const payload = {
       discordId: row.discordId,
       studentName: null,
@@ -126,7 +118,6 @@ WHERE id = $1
       sessionType: row.sessionType,
       notes: row.notes,
 
-      // Context passed cleanly
       paidCount,
       followups: row.followups ?? 0,
     };
@@ -134,18 +125,24 @@ WHERE id = $1
     // --------------------------
     // Student confirmation DM
     // --------------------------
-const claimed = await db.query(
-  `UPDATE "Session"
-   SET "confirmationSent" = TRUE
-   WHERE id = $1 AND "confirmationSent" = FALSE
-   RETURNING id`,
-  [sessionId]
-);
+    const claimed = await db.query(
+      `UPDATE "Session"
+       SET "confirmationSent" = TRUE
+       WHERE id = $1 AND "confirmationSent" = FALSE
+       RETURNING id`,
+      [sessionId]
+    );
 
-if (claimed.rowCount === 1) {
-  
-  await notifyStudent(client, payload);
-}
+    if (claimed.rowCount === 1) {
+      const ok = await notifyStudent(client, payload);
+
+      if (!ok) {
+        await db.query(
+          `UPDATE "Session" SET "confirmationSent" = FALSE WHERE id = $1`,
+          [sessionId]
+        );
+      }
+    }
 
     // --------------------------
     // Owner booking DM

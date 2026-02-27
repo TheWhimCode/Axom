@@ -15,7 +15,11 @@
     "exactOptionalPropertyTypes": true,
     "jsx": "react-jsx",
     "lib": ["ES2021", "DOM"],
-    "types": []
+    "types": [],
+    "baseUrl": ".",
+    "paths": {
+    "@/*": ["src/*"]
+  }
   },
   "include": ["index.ts", "src/**/*.ts"]
 }

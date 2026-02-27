@@ -34,7 +34,7 @@ export async function notifyStudentReminder(
     `**I'm back!!** as promised 😎`,
     `Your **${sessionType}** with Sho is coming up soon! 👀`,
     `> Don't forget to join the Discord <t:${unix}:R>`,
-    `> https://discord.gg/haZZEEwFNU`,
+    `> https://discord.gg/twrGXB7Px2`,
     `If something came up, please let Sho know ASAP!`,
     ``,
     `**See you soon!** <:Challenger:1378748820090917095>`,

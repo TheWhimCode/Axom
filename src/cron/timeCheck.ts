@@ -61,10 +61,6 @@ async function checkUpcomingSessions(client: Client) {
       studentName = user?.globalName ?? null;
     }
 
-    console.log(
-      `[REMINDER] session=${row.id} discord=${row.discordId} followups=${row.followups ?? 0}`
-    );
-
     const ok = await notifyStudentReminder(client, {
       studentName,
       discordId: row.discordId,
@@ -114,10 +110,6 @@ async function checkPastSessions(client: Client) {
       studentName = user?.globalName ?? null;
     }
 
-    console.log(
-      `[FOLLOWUP] session=${row.id} discord=${row.discordId} followups=${row.followups ?? 0}`
-    );
-
     const ok = await notifyStudentFollowup(client, {
       studentName,
       discordId: row.discordId,
@@ -160,8 +152,6 @@ async function checkUnsentPaymentDMs(client: Client) {
   `);
 
   for (const row of res.rows) {
-
-    // Count paid sessions
     let paidCount = 0;
 
     if (row.studentId) {
@@ -178,10 +168,6 @@ async function checkUnsentPaymentDMs(client: Client) {
       paidCount = countRes.rows[0]?.count ?? 0;
     }
 
-    console.log(
-      `[CONFIRMATION] session=${row.id} discord=${row.discordId} paidCount=${paidCount} followups=${row.followups ?? 0}`
-    );
-
     const payload = {
       discordId: row.discordId,
       studentName: null,
@@ -194,23 +180,28 @@ async function checkUnsentPaymentDMs(client: Client) {
       followups: row.followups ?? 0,
     };
 
-   if (row.confirmationSent === false) {
-  // claim atomically
-  const claimed = await pool.query(
-    `
-    UPDATE "Session"
-    SET "confirmationSent" = TRUE
-    WHERE id = $1 AND "confirmationSent" = FALSE
-    RETURNING id
-    `,
-    [row.id]
-  );
+    if (row.confirmationSent === false) {
+      const claimed = await pool.query(
+        `
+        UPDATE "Session"
+        SET "confirmationSent" = TRUE
+        WHERE id = $1 AND "confirmationSent" = FALSE
+        RETURNING id
+        `,
+        [row.id]
+      );
 
-  if (claimed.rowCount === 1) {
-    
-    await notifyStudent(client, payload);
-  }
-}
+      if (claimed.rowCount === 1) {
+        const ok = await notifyStudent(client, payload);
+
+        if (!ok) {
+          await pool.query(
+            `UPDATE "Session" SET "confirmationSent" = FALSE WHERE id = $1`,
+            [row.id]
+          );
+        }
+      }
+    }
 
     if (row.bookingOwnerSent === false) {
       await notifyOwner(client, payload);
@@ -233,8 +224,9 @@ async function runTimeChecks(client: Client) {
 export function startTimeCheckCron(client: Client) {
   void runTimeChecks(client);
 
-  const ONE_HOUR_MS = 60 * 60 * 1000;
+  const FIVE_MINUTES_MS = 5 * 60 * 1000;
+
   setInterval(() => {
     void runTimeChecks(client);
-  }, ONE_HOUR_MS);
+  }, FIVE_MINUTES_MS);
 }

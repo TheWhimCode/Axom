@@ -52,18 +52,6 @@ function ensureDailyState(now: DateTime) {
 
   state.schedule = buildDailySchedule(now);
   state.nextIndex = 0;
-
-  console.log(
-    `[OWNER_WELLBEING] new day=${dayKey} schedule=` +
-      state.schedule
-        .map(
-          (s) =>
-            `${s.kind}@${DateTime.fromISO(s.atISO, { zone: TZ }).toFormat(
-              "HH:mm"
-            )}`
-        )
-        .join(", ")
-  );
 }
 
 function buildDailySchedule(now: DateTime): Scheduled[] {
@@ -88,7 +76,6 @@ function buildDailySchedule(now: DateTime): Scheduled[] {
   );
   if (totalMinutes <= 0) return [];
 
-  // IMPORTANT: avoid Array(n).fill("water") because it widens to string[]
   const kinds: Scheduled["kind"][] = [
     ...Array.from({ length: Math.max(0, WATER_PER_DAY) }, () => "water" as const),
     ...Array.from({ length: Math.max(0, BREAK_PER_DAY) }, () => "break" as const),
@@ -96,7 +83,6 @@ function buildDailySchedule(now: DateTime): Scheduled[] {
 
   if (kinds.length === 0) return [];
 
-  // Pick random minute offsets with min-gap constraint
   const pickedOffsets: number[] = [];
   const maxAttempts = 5000;
 
@@ -104,7 +90,7 @@ function buildDailySchedule(now: DateTime): Scheduled[] {
     let ok = false;
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      const offset = Math.floor(Math.random() * totalMinutes); // 0..totalMinutes-1
+      const offset = Math.floor(Math.random() * totalMinutes);
 
       const tooClose = pickedOffsets.some(
         (o) => Math.abs(o - offset) < MIN_GAP_MINUTES
@@ -118,17 +104,16 @@ function buildDailySchedule(now: DateTime): Scheduled[] {
     }
 
     if (!ok) {
-      // Constraints too tight; pick any remaining time to avoid “no reminders today”
       pickedOffsets.push(Math.floor(Math.random() * totalMinutes));
     }
   }
 
-for (let i = kinds.length - 1; i > 0; i--) {
-  const j = Math.floor(Math.random() * (i + 1));
-  const tmp = kinds[i]!;     // safe: i in range
-  kinds[i] = kinds[j]!;      // safe: j in range
-  kinds[j] = tmp;
-}
+  for (let i = kinds.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const tmp = kinds[i]!;
+    kinds[i] = kinds[j]!;
+    kinds[j] = tmp;
+  }
 
   const schedule: Scheduled[] = kinds.map((kind, idx) => {
     const at = windowStart.plus({ minutes: pickedOffsets[idx] });
@@ -154,7 +139,6 @@ async function maybeSendLate(client: Client, now: DateTime) {
 }
 
 async function maybeSendDueRandoms(client: Client, now: DateTime) {
-  // Send anything that is due (handles bot downtime gracefully)
   let sentThisTick = 0;
   const MAX_SEND_PER_TICK = 3;
 
@@ -173,7 +157,6 @@ async function maybeSendDueRandoms(client: Client, now: DateTime) {
     if (ok) {
       sentThisTick += 1;
     } else {
-      // If DM fails, don't spam-retry; move on.
       break;
     }
   }

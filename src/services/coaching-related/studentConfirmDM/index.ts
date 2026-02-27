@@ -2,6 +2,8 @@ import type { Client } from "discord.js";
 import { sendDefaultDM } from "./DefaultDM";
 import { sendHasFollowupDM } from "./hasFollowup";
 import { sendEloRushDM } from "./EloRushDM";
+import { sendReturningDM } from "./ReturningDM";
+import { createDiscordEvent } from "../createDiscordEvent";
 
 export type StudentConfirmPayload = {
   discordId: string | null;
@@ -16,13 +18,23 @@ export type StudentConfirmPayload = {
   followups: number;
 };
 
-type MainDMKind = "default" | "eloRush";
+type MainDMKind = "default" | "eloRush" | "returning";
 
 function normalizeSessionType(s: string | null | undefined) {
   return (s ?? "").trim().toLowerCase();
 }
 
+function isReturningStudent(p: StudentConfirmPayload): boolean {
+  const n = Number(p.paidCount ?? 0);
+  // If they've paid 2+ times, this booking is at least their 2nd session.
+  return n >= 2;
+}
+
 async function pickMainDMKind(p: StudentConfirmPayload): Promise<MainDMKind> {
+  // Returning DM overrides session type (per your request)
+  if (isReturningStudent(p)) return "returning";
+
+  // First session: choose based on session type
   if (normalizeSessionType(p.sessionType) === "elo rush") return "eloRush";
   return "default";
 }
@@ -61,25 +73,46 @@ async function sendClosingLineWithTyping(
 }
 
 export async function notifyStudent(
-  
   client: Client,
   payload: StudentConfirmPayload
 ): Promise<boolean> {
-  
   if (!payload.discordId) return false;
 
   const hasFollowup = (payload.followups ?? 0) > 0;
   const kind = await pickMainDMKind(payload);
   const closingLine = pickClosingLine(payload);
 
-  console.log("[notifyStudent] followups =", payload.followups, "hasFollowup =", hasFollowup);
+  console.log(
+    "[notifyStudent] paidCount =",
+    payload.paidCount,
+    "followups =",
+    payload.followups,
+    "hasFollowup =",
+    hasFollowup,
+    "kind =",
+    kind
+  );
 
   const mainOk =
-    kind === "eloRush"
-      ? await sendEloRushDM(client, payload)
-      : await sendDefaultDM(client, payload);
+    kind === "returning"
+      ? await sendReturningDM(client, payload)
+      : kind === "eloRush"
+        ? await sendEloRushDM(client, payload)
+        : await sendDefaultDM(client, payload);
 
   if (!mainOk) return false;
+
+  // DM succeeded => create Discord event (best-effort).
+  // You chose: no idempotency / no DB field; worst-case is event missing on outages.
+  void createDiscordEvent(client, {
+    guildId: process.env.DISCORD_SERVER_ID!,
+    stageChannelId: process.env.STAGE_CHANNEL_ID!,
+    scheduledStart: payload.scheduledStart,
+    scheduledMinutes: payload.scheduledMinutes,
+    sessionType: payload.sessionType,
+    studentName: payload.studentName,
+    riotTag: payload.riotTag,
+  }).catch(() => {});
 
   if (hasFollowup) {
     // Await instead of void — blocks until the full sequence (including closing line) completes.
@@ -89,7 +122,9 @@ export async function notifyStudent(
   }
 
   // No followup — send closing line directly
-  void sendClosingLineWithTyping(client, payload.discordId, closingLine).catch(() => {});
+  void sendClosingLineWithTyping(client, payload.discordId, closingLine).catch(
+    () => {}
+  );
 
   return true;
 }
