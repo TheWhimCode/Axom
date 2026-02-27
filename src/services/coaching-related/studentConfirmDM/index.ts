@@ -26,28 +26,40 @@ function normalizeSessionType(s: string | null | undefined) {
 
 function isReturningStudent(p: StudentConfirmPayload): boolean {
   const n = Number(p.paidCount ?? 0);
-  // If they've paid 2+ times, this booking is at least their 2nd session.
   return n >= 2;
 }
 
 async function pickMainDMKind(p: StudentConfirmPayload): Promise<MainDMKind> {
-  // Returning DM overrides session type (per your request)
   if (isReturningStudent(p)) return "returning";
-
-  // First session: choose based on session type
   if (normalizeSessionType(p.sessionType) === "elo rush") return "eloRush";
   return "default";
 }
 
-const CLOSING_FIRST = `**We're looking forward to working with you! 🥰**`;
-const CLOSING_SECOND = `**Nice to see you again! —** I see you're ready for the next steps! :fire:`;
-const CLOSING_THIRD_PLUS = `**Welcome back —** let's build on last time! 🎯`;
+// --------------------
+// Closing Lines (1–8)
+// --------------------
 
 function pickClosingLine(p: StudentConfirmPayload): string {
   const n = Number(p.paidCount ?? 0);
-  if (n <= 1) return CLOSING_FIRST;
-  if (n === 2) return CLOSING_SECOND;
-  return CLOSING_THIRD_PLUS;
+
+  switch (n) {
+    case 1:
+      return `**We’re looking forward to working with you! 🥰**`;
+    case 2:
+      return `**Nice to see you again! —** I see you're ready for the next steps! 🔥`;
+    case 3:
+      return `**Welcome back —** let’s build on last time! 🎯`;
+    case 4:
+      return `**Look who’s here again 😌** Welcome back.`;
+    case 5:
+      return `**HEY AGAIN!! 😄** We’re really building something here.`;
+    case 6:
+      return `**You're back!! :innocent:** I was starting to miss you.`;
+    case 7:
+      return `**That's some dedication 😤📈** Let's make this one count.`;
+    default:
+      return `**Back at it!! 🔁✨** I love seeing this kind of consistency.`;
+  }
 }
 
 function sleep(ms: number) {
@@ -82,17 +94,6 @@ export async function notifyStudent(
   const kind = await pickMainDMKind(payload);
   const closingLine = pickClosingLine(payload);
 
-  console.log(
-    "[notifyStudent] paidCount =",
-    payload.paidCount,
-    "followups =",
-    payload.followups,
-    "hasFollowup =",
-    hasFollowup,
-    "kind =",
-    kind
-  );
-
   const mainOk =
     kind === "returning"
       ? await sendReturningDM(client, payload)
@@ -102,8 +103,6 @@ export async function notifyStudent(
 
   if (!mainOk) return false;
 
-  // DM succeeded => create Discord event (best-effort).
-  // You chose: no idempotency / no DB field; worst-case is event missing on outages.
   void createDiscordEvent(client, {
     guildId: process.env.DISCORD_SERVER_ID!,
     stageChannelId: process.env.STAGE_CHANNEL_ID!,
@@ -115,13 +114,10 @@ export async function notifyStudent(
   }).catch(() => {});
 
   if (hasFollowup) {
-    // Await instead of void — blocks until the full sequence (including closing line) completes.
-    // This prevents a second notifyStudent call from racing through while the first is mid-sequence.
     await sendHasFollowupDM(client, payload, { closingLine });
     return true;
   }
 
-  // No followup — send closing line directly
   void sendClosingLineWithTyping(client, payload.discordId, closingLine).catch(
     () => {}
   );
