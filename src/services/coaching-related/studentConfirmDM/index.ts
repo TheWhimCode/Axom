@@ -1,4 +1,5 @@
 import type { Client } from "discord.js";
+import { logError } from "../../../logger";
 import { sendDefaultDM } from "./DefaultDM";
 import { sendHasFollowupDM } from "./hasFollowup";
 import { sendEloRushDM } from "./EloRushDM";
@@ -113,15 +114,15 @@ export async function notifyStudent(
     studentName: payload.studentName,
     riotTag: payload.riotTag,
     champions: payload.champions,
-  }).catch(() => {});
+  }).catch((err) => logError("studentConfirmDM createDiscordEvent", err));
 
   if (hasFollowup) {
     await sendHasFollowupDM(client, payload, { closingLine });
     return true;
   }
 
-  void sendClosingLineWithTyping(client, payload.discordId, closingLine).catch(
-    () => {}
+  void sendClosingLineWithTyping(client, payload.discordId, closingLine).catch((err) =>
+    logError("studentConfirmDM closingLine", err)
   );
 
   return true;

@@ -1,6 +1,7 @@
 // src/listener/sessionPaid.ts
 import pg from "pg";
 import EventEmitter from "events";
+import { logError } from "../logger";
 import { notifyOwner } from "../services/coaching-related/bookingDM";
 import { notifyStudent } from "../services/coaching-related/studentConfirmDM";
 import type { Client } from "discord.js";
@@ -10,13 +11,20 @@ const { Client: PgClient } = pg;
 
 export const sessionEvents = new EventEmitter();
 
-export function startSessionListener(client: Client) {
+export function startSessionListener(client: Client): () => Promise<void> {
   let db: pg.Client | null = null;
+  let retryTimeoutId: ReturnType<typeof setTimeout> | null = null;
+  let shuttingDown = false;
 
   async function connect() {
+    if (shuttingDown) return;
     try {
       if (db) {
-        try { await db.end(); } catch {}
+        try {
+          await db.end();
+        } catch (e) {
+          logError("sessionPaid", e);
+        }
       }
 
       db = new PgClient({ connectionString: DIRECT_DATABASE_URL });
@@ -26,13 +34,15 @@ export function startSessionListener(client: Client) {
       db.on("notification", onNotification);
       db.on("error", onError);
 
-    } catch {
-      retry();
+    } catch (err) {
+      logError("sessionPaid connect", err);
+      if (!shuttingDown) retry();
     }
   }
 
   function retry() {
-    setTimeout(connect, 5000);
+    if (shuttingDown) return;
+    retryTimeoutId = setTimeout(connect, 5000);
   }
 
   async function onNotification(msg: pg.Notification) {
@@ -46,15 +56,31 @@ export function startSessionListener(client: Client) {
       await handleSessionPaid(sessionId);
 
     } catch (err) {
-      console.error("[sessionPaid] onNotification error:", err);
+      logError("sessionPaid onNotification", err);
     }
   }
 
   function onError() {
-    retry();
+    if (!shuttingDown) retry();
   }
 
   connect();
+
+  return async function stop() {
+    shuttingDown = true;
+    if (retryTimeoutId !== null) {
+      clearTimeout(retryTimeoutId);
+      retryTimeoutId = null;
+    }
+    if (db) {
+      try {
+        await db.end();
+      } catch (e) {
+        logError("sessionPaid stop", e);
+      }
+      db = null;
+    }
+  };
 
   // ------------------------------
   // MAIN HANDLER

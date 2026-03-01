@@ -77,7 +77,7 @@ export const OWNER_WELLBEING_LINES: Record<
     },
     {
       message:
-        "one glass of water, then back to whatever mastermind plan you're doing 🤍",
+        "one glass of water, then back to whatever mastermind plan you're doing :3",
     },
     {
       message: "your mana bar's looking low 😅 grab some water and top it off!",
@@ -88,7 +88,7 @@ export const OWNER_WELLBEING_LINES: Record<
   break: [
     {
       message:
-        "pause for a sec — unclench your jaw, shoulders down. take a breath. you're doing great 🫶",
+        "pause for a sec — unclench your jaw, shoulders down. take a breath. you're doing great <3",
     },
     {
       message:

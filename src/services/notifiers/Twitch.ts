@@ -7,6 +7,7 @@ import {
   ButtonBuilder,
   ButtonStyle,
 } from "discord.js";
+import { logError } from "../../logger";
 
 // ---------------------------------------------
 // Types
@@ -173,11 +174,11 @@ async function handleOfflineEvent(client: Client) {
 // ---------------------------------------------
 // Helper wrapper
 // ---------------------------------------------
-async function safeAction(action: () => Promise<any>) {
+async function safeAction(action: () => Promise<unknown>) {
   try {
     await action();
   } catch (err) {
-    console.error("[Twitch] Action failed:", err);
+    logError("Twitch", err);
   }
 }
 

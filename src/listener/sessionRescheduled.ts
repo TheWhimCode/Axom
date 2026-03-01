@@ -1,6 +1,7 @@
 // src/listener/sessionRescheduled.ts
 import pg from "pg";
 import type { Client } from "discord.js";
+import { logError, logWarn } from "../logger";
 import { notifyStudentRescheduled } from "../services/coaching-related/reschedule/studentDM";
 import { notifyOwnerRescheduled } from "../services/coaching-related/reschedule/ownerDM";
 
@@ -14,15 +15,20 @@ type RescheduleNotifyPayload = {
   newStart?: string;
 };
 
-export function startSessionRescheduledListener(client: Client) {
+export function startSessionRescheduledListener(client: Client): () => Promise<void> {
   let db: pg.Client | null = null;
+  let retryTimeoutId: ReturnType<typeof setTimeout> | null = null;
+  let shuttingDown = false;
 
   async function connect() {
+    if (shuttingDown) return;
     try {
       if (db) {
         try {
           await db.end();
-        } catch {}
+        } catch (e) {
+          logError("sessionRescheduled connect", e);
+        }
       }
 
       db = new PgClient({ connectionString: DIRECT_DATABASE_URL });
@@ -34,13 +40,14 @@ export function startSessionRescheduledListener(client: Client) {
       db.on("notification", onNotification);
       db.on("error", onError);
     } catch (err) {
-      console.log("[PG] sessions_rescheduled failed, reconnecting…", err);
-      retry();
+      logError("sessionRescheduled connect", err);
+      if (!shuttingDown) retry();
     }
   }
 
   function retry() {
-    setTimeout(connect, 5000);
+    if (shuttingDown) return;
+    retryTimeoutId = setTimeout(connect, 5000);
   }
 
   async function onNotification(msg: pg.Notification) {
@@ -50,7 +57,7 @@ export function startSessionRescheduledListener(client: Client) {
     try {
       payload = JSON.parse(msg.payload);
     } catch (err) {
-      console.log("[PG] bad JSON in sessions_rescheduled", err);
+      logError("sessionRescheduled bad JSON", err);
       return;
     }
 
@@ -108,14 +115,32 @@ export function startSessionRescheduledListener(client: Client) {
       await notifyStudentRescheduled(client, dmPayload);
       await notifyOwnerRescheduled(client, dmPayload);
     } catch (err) {
-      console.log("[PG] sessions_rescheduled handler error", err);
+      logError("sessionRescheduled handler", err);
     }
   }
 
   function onError() {
-    console.log("[PG] sessions_rescheduled connection lost, reconnecting…");
-    retry();
+    if (!shuttingDown) {
+      logWarn("sessionRescheduled", "connection lost, reconnecting…");
+      retry();
+    }
   }
 
   connect();
+
+  return async function stop() {
+    shuttingDown = true;
+    if (retryTimeoutId !== null) {
+      clearTimeout(retryTimeoutId);
+      retryTimeoutId = null;
+    }
+    if (db) {
+      try {
+        await db.end();
+      } catch (e) {
+        logError("sessionRescheduled stop", e);
+      }
+      db = null;
+    }
+  };
 }

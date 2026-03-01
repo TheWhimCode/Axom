@@ -5,6 +5,7 @@ import {
   GuildScheduledEventEntityType,
   GuildScheduledEventPrivacyLevel,
 } from "discord.js";
+import { logError } from "../../logger";
 
 type CreateDiscordEventPayload = {
   guildId: string;
@@ -71,7 +72,8 @@ export async function createDiscordEvent(
     });
 
     return true;
-  } catch {
+  } catch (err) {
+    logError("createDiscordEvent", err);
     return false;
   }
 }

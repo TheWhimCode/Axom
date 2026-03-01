@@ -1,5 +1,6 @@
 // src/listener/receivedDM.ts
 import type { Client, Message } from "discord.js";
+import { logError } from "../logger";
 
 const INBOX_CHANNEL_ID = process.env.INBOX_CHANNEL_ID!;
 
@@ -61,13 +62,11 @@ export function registerDMListener(client: Client) {
 
     try {
       const dmChannel = await msg.author.createDM();
-      
-      await dmChannel.sendTyping();   // start typing
-      await sleep(2000);              // wait 2 seconds
-      
+      await dmChannel.sendTyping();
+      await sleep(2000);
       await dmChannel.send(pickRandomConfirmation());
-    } catch {
-      // ignore DM failures
+    } catch (err) {
+      logError("receivedDM confirm", err);
     }
   });
 }

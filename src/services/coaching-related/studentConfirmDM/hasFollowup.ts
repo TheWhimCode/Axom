@@ -1,4 +1,5 @@
 import type { Client } from "discord.js";
+import { logError } from "../../../logger";
 import {
   ActionRowBuilder,
   ButtonBuilder,
@@ -120,7 +121,7 @@ export async function sendHasFollowupDM(
 
     return true;
   } catch (err) {
-    console.log("[sendHasFollowupDM] failed:", err);
+    logError("sendHasFollowupDM", err);
     return false;
   }
 }

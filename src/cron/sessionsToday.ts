@@ -2,6 +2,7 @@
 import type { Client } from "discord.js";
 import { DateTime } from "luxon";
 import { pool } from "../db";
+import { logError } from "../logger";
 import type { SessionRow } from "../types/session";
 
 const OWNER_ID = process.env.OWNER_ID!;
@@ -102,7 +103,8 @@ async function sendOwnerMorningSchedule(client: Client) {
     await owner.send(msg);
     lastSentDayKey = dayKey;
     return true;
-  } catch {
+  } catch (err) {
+    logError("sessionsToday sendOwnerMorningSchedule", err);
     return false;
   }
 }

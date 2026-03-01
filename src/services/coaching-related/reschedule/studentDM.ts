@@ -1,6 +1,7 @@
 // src/services/coaching-related/studentRescheduledDM.ts
 import type { Client } from "discord.js";
 import { DateTime } from "luxon";
+import { logError } from "../../../logger";
 
 export interface RescheduledPayload {
   discordId: string | null;
@@ -47,7 +48,8 @@ export async function notifyStudentRescheduled(
   try {
     await user.send(msg);
     return true;
-  } catch {
+  } catch (err) {
+    logError("reschedule studentDM", err);
     return false;
   }
 }

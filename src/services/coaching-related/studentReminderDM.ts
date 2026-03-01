@@ -1,5 +1,6 @@
 // src/services/coaching-related/studentReminderDM.ts
 import type { Client } from "discord.js";
+import { logError } from "../../logger";
 
 export type ReminderPayload = {
   studentName: string | null;
@@ -43,7 +44,8 @@ export async function notifyStudentReminder(
   try {
     await user.send(msg);
     return true;
-  } catch {
+  } catch (err) {
+    logError("studentReminderDM", err);
     return false;
   }
 }

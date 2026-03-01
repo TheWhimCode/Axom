@@ -1,5 +1,6 @@
 import type { Client } from "discord.js";
 import { DateTime } from "luxon";
+import { logError } from "../../../logger";
 import type { StudentConfirmPayload } from "./index";
 
 export async function sendReturningDM(
@@ -38,7 +39,8 @@ export async function sendReturningDM(
   try {
     await user.send(msg);
     return true;
-  } catch {
+  } catch (err) {
+    logError("studentConfirmDM Returning", err);
     return false;
   }
 }

@@ -1,7 +1,8 @@
 // src/services/coaching-related/ownerRescheduledDM.ts
-
 import { EmbedBuilder, type Client } from "discord.js";
 import { DateTime } from "luxon";
+import { logError } from "../../../logger";
+import { withRetry } from "../../../utils/retry";
 
 const OWNER_ID = process.env.OWNER_ID!;
 
@@ -83,6 +84,8 @@ export async function notifyOwnerRescheduled(
     });
   }
 
-  await owner.send({ embeds: [embed] }).catch(() => {});
+  await withRetry(() => owner.send({ embeds: [embed] }), { attempts: 2, delayMs: 1500 }).catch(
+    (err) => logError("reschedule ownerDM", err)
+  );
   return true;
 }

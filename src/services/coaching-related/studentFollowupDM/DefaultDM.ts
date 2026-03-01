@@ -1,4 +1,5 @@
 import type { Client } from "discord.js";
+import { logError } from "../../../logger";
 import type { FollowupPayload } from "./index";
 
 type DefaultFollowupOpts = {
@@ -34,7 +35,8 @@ export async function sendDefaultFollowupDM(
   try {
     await user.send(msg);
     return true;
-  } catch {
+  } catch (err) {
+    logError("studentFollowupDM Default", err);
     return false;
   }
 }

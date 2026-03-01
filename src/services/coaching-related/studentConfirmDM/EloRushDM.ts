@@ -1,5 +1,6 @@
 import type { Client } from "discord.js";
 import { DateTime } from "luxon";
+import { logError } from "../../../logger";
 import type { StudentConfirmPayload } from "./index";
 
 export async function sendEloRushDM(
@@ -46,7 +47,8 @@ export async function sendEloRushDM(
   try {
     await user.send(msg);
     return true;
-  } catch {
+  } catch (err) {
+    logError("studentConfirmDM EloRush", err);
     return false;
   }
 }

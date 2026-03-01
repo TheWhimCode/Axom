@@ -1,5 +1,6 @@
 // src/services/coaching-related/studentFollowupDM/ReturningDM.ts
 import type { Client } from "discord.js";
+import { logError } from "../../../logger";
 import type { FollowupPayload } from "./index";
 
 type ReturningFollowupOpts = {
@@ -32,7 +33,8 @@ export async function sendReturningFollowupDM(
   try {
     await user.send(msg);
     return true;
-  } catch {
+  } catch (err) {
+    logError("studentFollowupDM Returning", err);
     return false;
   }
 }

@@ -1,4 +1,5 @@
 import type { Client } from "discord.js";
+import { logError } from "../../logger";
 import {
   OWNER_WELLBEING_LINES,
   pickWeighted,
@@ -24,7 +25,8 @@ export async function notifyOwnerWellbeing(
   try {
     await owner.send(chosen.message);
     return true;
-  } catch {
+  } catch (err) {
+    logError("reminder notifyOwnerWellbeing", err);
     return false;
   }
 }

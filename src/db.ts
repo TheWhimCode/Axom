@@ -7,3 +7,7 @@ export const pool = new Pool({
   connectionString,
   ssl: true,
 });
+
+export function closePool(): Promise<void> {
+  return pool.end();
+}

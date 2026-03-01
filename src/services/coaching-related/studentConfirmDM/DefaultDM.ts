@@ -1,5 +1,6 @@
 import type { Client } from "discord.js";
 import { DateTime } from "luxon";
+import { logError } from "../../../logger";
 import type { StudentConfirmPayload } from "./index";
 
 export async function sendDefaultDM(
@@ -47,7 +48,8 @@ export async function sendDefaultDM(
   try {
     await user.send(msg);
     return true;
-  } catch {
+  } catch (err) {
+    logError("studentConfirmDM Default", err);
     return false;
   }
 }
