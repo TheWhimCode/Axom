@@ -1,31 +1,10 @@
-import { Pool } from "pg";
 import type { Client } from "discord.js";
+import { pool } from "../db";
+import type { SessionRow } from "../types/session";
 import { notifyStudentReminder } from "../services/coaching-related/studentReminderDM";
 import { notifyStudentFollowup } from "../services/coaching-related/studentFollowupDM/index";
 import { notifyStudent } from "../services/coaching-related/studentConfirmDM";
 import { notifyOwner } from "../services/coaching-related/bookingDM";
-
-const pool = new Pool({
-  connectionString: process.env.DIRECT_DATABASE_URL!,
-  ssl: true,
-});
-
-type SessionRow = {
-  id: string;
-  riotTag: string | null;
-  discordId: string | null;
-  studentId?: string | null;
-  scheduledStart: Date;
-  scheduledMinutes: number;
-  sessionType: string;
-  reminderSent: boolean;
-  followupSent: boolean;
-  confirmationSent?: boolean;
-  bookingOwnerSent?: boolean;
-  notes: string | null;
-  followups?: number;
-  champions?: string[] | null;
-};
 
 function wait(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -153,22 +132,23 @@ async function checkUnsentPaymentDMs(client: Client) {
       AND ("confirmationSent" = FALSE OR "bookingOwnerSent" = FALSE)
   `);
 
-  for (const row of res.rows) {
-    let paidCount = 0;
-
-    if (row.studentId) {
-      const countRes = await pool.query<{ count: number }>(
-        `
-        SELECT COUNT(*)::int AS count
-        FROM "Session"
-        WHERE status = 'paid'
-          AND "studentId" = $1
-        `,
-        [row.studentId]
-      );
-
-      paidCount = countRes.rows[0]?.count ?? 0;
+  const studentIds = [...new Set(res.rows.map((r) => r.studentId).filter(Boolean))] as string[];
+  const paidCountByStudent = new Map<string, number>();
+  if (studentIds.length > 0) {
+    const countRes = await pool.query<{ studentId: string; count: string }>(
+      `SELECT "studentId", COUNT(*)::text AS count
+       FROM "Session"
+       WHERE status = 'paid' AND "studentId" = ANY($1)
+       GROUP BY "studentId"`,
+      [studentIds]
+    );
+    for (const r of countRes.rows) {
+      paidCountByStudent.set(r.studentId, parseInt(r.count, 10) || 0);
     }
+  }
+
+  for (const row of res.rows) {
+    const paidCount = row.studentId ? paidCountByStudent.get(row.studentId) ?? 0 : 0;
 
     const payload = {
       discordId: row.discordId,

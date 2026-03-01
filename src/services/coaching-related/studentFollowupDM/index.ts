@@ -1,13 +1,8 @@
 // src/services/coaching-related/studentFollowupDM/index.ts
 import type { Client } from "discord.js";
-import { Pool } from "pg";
+import { pool } from "../../../db";
 import { sendDefaultFollowupDM } from "./DefaultDM";
 import { sendReturningFollowupDM } from "./ReturningDM";
-
-const pool = new Pool({
-  connectionString: process.env.DIRECT_DATABASE_URL!,
-  ssl: true,
-});
 
 export type FollowupPayload = {
   studentName: string | null;

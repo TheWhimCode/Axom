@@ -1,7 +1,8 @@
 // src/cron/ownerMorningSchedule.ts
-import { Pool } from "pg";
 import type { Client } from "discord.js";
 import { DateTime } from "luxon";
+import { pool } from "../db";
+import type { SessionRow } from "../types/session";
 
 const OWNER_ID = process.env.OWNER_ID!;
 const TZ = process.env.OWNER_TZ ?? "Europe/Berlin";
@@ -11,22 +12,6 @@ const TZ = process.env.OWNER_TZ ?? "Europe/Berlin";
 // between 08:00 and 12:00 local time and hasn't sent yet today.
 const MORNING_HOUR = Number(process.env.OWNER_MORNING_HOUR ?? 8);
 const CUTOFF_HOUR = Number(process.env.OWNER_MORNING_CUTOFF_HOUR ?? 12);
-
-const pool = new Pool({
-  connectionString: process.env.DIRECT_DATABASE_URL!,
-  ssl: true,
-});
-
-type SessionRow = {
-  id: string;
-  scheduledStart: Date;
-  scheduledMinutes: number;
-  sessionType: string;
-  discordId: string | null;
-  riotTag: string | null;
-  notes: string | null;
-  status: string;
-};
 
 let lastSentDayKey: string | null = null;
 

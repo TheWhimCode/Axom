@@ -24,17 +24,24 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+type SendableChannel = { send: (opts: { content: string }) => Promise<unknown> };
+
 export function registerDMListener(client: Client) {
+  let inboxChannelCache: SendableChannel | null = null;
+
+  async function getInboxChannel(): Promise<SendableChannel | null> {
+    if (inboxChannelCache) return inboxChannelCache;
+    const ch = await client.channels.fetch(INBOX_CHANNEL_ID).catch(() => null);
+    if (ch?.isTextBased() && "send" in ch) inboxChannelCache = ch as SendableChannel;
+    return inboxChannelCache;
+  }
+
   client.on("messageCreate", async (msg: Message) => {
     // Only DM from real users (not bot, not server messages)
     if (msg.guild || msg.author.bot) return;
 
-    const inboxChannel = await client.channels
-      .fetch(INBOX_CHANNEL_ID)
-      .catch(() => null);
-
-    if (!inboxChannel || !inboxChannel.isTextBased()) return;
-    if (!("send" in inboxChannel)) return;
+    const inboxChannel = await getInboxChannel();
+    if (!inboxChannel) return;
 
     // Forward DM to your private inbox channel
     await inboxChannel.send({

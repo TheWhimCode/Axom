@@ -6,6 +6,7 @@ import {
   Partials,
 } from "discord.js";
 
+import { validateEnv } from "./src/env";
 import { startSessionListener } from "./src/listener/sessionPaid";
 import { startSessionRescheduledListener } from "./src/listener/sessionRescheduled";
 import { startTimeCheckCron } from "./src/cron/timeCheck";
@@ -13,6 +14,8 @@ import { registerDMListener } from "./src/listener/receivedDM";
 import { startTwitchLiveChecker } from "./src/services/notifiers/Twitch";
 import { startOwnerWellbeingCron } from "./src/cron/selfcare";
 import { startOwnerMorningScheduleCron } from "./src/cron/sessionsToday";
+
+validateEnv();
 
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN!;
 
