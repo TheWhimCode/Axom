@@ -21,15 +21,8 @@ export async function notifyOwnerWellbeing(
 
   const chosen = pickWeighted(pool);
 
-  // Plain text message (no embed)
-  const message = [
-    `**${chosen.title}**`,
-    "",
-    chosen.description,
-  ].join("\n");
-
   try {
-    await owner.send(message);
+    await owner.send(chosen.message);
     return true;
   } catch {
     return false;

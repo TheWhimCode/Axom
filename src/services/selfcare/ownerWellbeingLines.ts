@@ -1,15 +1,9 @@
 export type OwnerWellbeingKind = "late" | "water" | "break";
 
 export type WellbeingLine = {
-  title: string;
-  description: string;
-  color: number;
+  message: string;
   weight?: number;
 };
-
-const RED = 0xed4245;
-const GREEN = 0x57f287;
-const BLURPLE = 0x5865f2;
 
 export const OWNER_WELLBEING_LINES: Record<
   OwnerWellbeingKind,
@@ -18,240 +12,111 @@ export const OWNER_WELLBEING_LINES: Record<
   // ===================== LATE =====================
   late: [
     {
-      title: "hey… it’s getting kinda late",
-      description: [
-        "don’t let tonight steal from tomorrow 🤍",
-        "",
-        "one clean final move",
-        "then we rest",
-      ].join("\n"),
-      color: RED,
+      message:
+        "hey… it's getting late. don't let tonight steal from tomorrow 🤍 one more thing then rest, okay?",
     },
     {
-      title: "okay bestie",
-      description: [
-        "the “one more thing” trap is active rn 😭",
-        "",
-        "wrap it properly",
-        "future-you will be so grateful",
-      ].join("\n"),
-      color: RED,
+      message:
+        'okay bestie — the "one more thing" trap is real 😭 wrap up something small and then log off. future you will thank you!',
     },
     {
-      title: "real quick before you spiral",
-      description: [
-        "pick ONE:",
-        "• finish something tiny",
-        "• or stop on purpose",
-        "",
-        "either is a win 🫶",
-      ].join("\n"),
-      color: RED,
+      message:
+        "psst — you've done a lot today. save your progress, close the tabs, and get some sleep ✨",
     },
     {
-      title: "gentle reminder",
-      description: [
-        "you’ve done enough today",
-        "",
-        "write tomorrow’s first step",
-        "then close everything 😌",
-      ].join("\n"),
-      color: RED,
+      message:
+        "quick one: pick one tiny thing to finish or just… stop. either way you win 🫶 then rest!",
     },
     {
-      title: "deal? 🤝",
-      description: [
-        "save progress",
-        "set the next move for tomorrow",
-        "",
-        "and then you log off like a legend",
-      ].join("\n"),
-      color: RED,
+      message:
+        "one more save point, then you log off like the legend you are. deal? 🤝 get some sleep!",
     },
     {
-      title: "pls don’t blur the ending",
-      description: [
-        "you can keep going…",
-        "but it gets messy fast",
-        "",
-        "clean landing > extra grinding",
-      ].join("\n"),
-      color: RED,
+      message:
+        "it's getting late — your brain needs rest to recharge for tomorrow. wrap up and sleep well 😌",
     },
     {
-      title: "okay commander 🫡",
-      description: [
-        "tomorrow-you needs energy",
-        "",
-        "write the next action",
-        "then sleep",
-      ].join("\n"),
-      color: RED,
+      message:
+        "okay commander 🫡 tomorrow-you needs you rested. call it a night and come back stronger!",
     },
     {
-      title: "last checkpoint",
-      description: [
-        "what’s the smallest clean finish you can do?",
-        "",
-        "do that",
-        "then stop ✨",
-      ].join("\n"),
-      color: RED,
+      message:
+        "whatever you're doing can wait. you've got this tomorrow — go sleep! 🤍",
     },
   ],
 
   // ===================== WATER =====================
   water: [
     {
-      title: "wait",
-      description: [
-        "have you had water yet 🥺",
-        "",
-        "just a little bit",
-        "then you can go back to cooking",
-      ].join("\n"),
-      color: GREEN,
+      message:
+        "wait — have you had water yet 🥺 just a little sip, then back to whatever you're crushing!",
     },
     {
-      title: "quick thing 💧",
-      description: [
-        "go drink some water real quick",
-        "",
-        "i don’t want your brain running on fumes",
-      ].join("\n"),
-      color: GREEN,
+      message:
+        "go drink some water real quick 💧 i don't want your brain running on fumes!",
     },
     {
-      title: "tiny reset moment 🫶",
-      description: [
-        "stand up",
-        "sip something",
-        "",
-        "come back sharper",
-      ].join("\n"),
-      color: GREEN,
+      message:
+        "stand up, grab a sip of something, then come back. you'll feel a bit sharper 🫶",
     },
     {
-      title: "just checking…",
-      description: [
-        "are we hydrated",
-        "or are we being dramatic again 😭",
-      ].join("\n"),
-      color: GREEN,
+      message:
+        "are we hydrated or are we being dramatic again 😭 go drink some water!",
     },
     {
-      title: "listen",
-      description: [
-        "you’ve been locked in",
-        "",
-        "please hydrate a little",
-        "i like you alive and functional 😌",
-      ].join("\n"),
-      color: GREEN,
+      message:
+        "you've been locked in — please hydrate a little. i like you alive and functional 😌",
     },
     {
-      title: "potion time",
-      description: [
-        "sip sip",
-        "",
-        "it’s literally free focus",
-        "why would we refuse free focus",
-      ].join("\n"),
-      color: GREEN,
+      message:
+        "potion time 🧪 sip sip! it's literally free focus. why would we refuse free focus?",
     },
     {
-      title: "be so fr",
-      description: [
-        "drink water",
-        "",
-        "like right now",
-        "and then you can continue being scary productive",
-      ].join("\n"),
-      color: GREEN,
+      message:
+        "be so fr — drink water. like right now. then you can go back to being scary productive!",
     },
     {
-      title: "okay okay",
-      description: [
-        "one glass",
-        "",
-        "then back to whatever mastermind plan you’re doing 🤍",
-      ].join("\n"),
-      color: GREEN,
+      message:
+        "one glass of water, then back to whatever mastermind plan you're doing 🤍",
+    },
+    {
+      message: "your mana bar's looking low 😅 grab some water and top it off!",
     },
   ],
 
   // ===================== BREAK =====================
   break: [
     {
-      title: "pause for a sec",
-      description: [
-        "what are we actually trying to do right now",
-        "",
-        "like… really",
-      ].join("\n"),
-      color: BLURPLE,
+      message:
+        "pause for a sec — unclench your jaw, shoulders down. take a breath. you're doing great 🫶",
     },
     {
-      title: "zoom out with me 🫶",
-      description: [
-        "does this move the needle",
-        "or just feel productive",
-      ].join("\n"),
-      color: BLURPLE,
+      message:
+        "step away from the screen for like two minutes. stretch a little. your body will thank you!",
     },
     {
-      title: "i love the intensity",
-      description: [
-        "but let’s aim it properly",
-        "",
-        "what’s the next real move 🤍",
-      ].join("\n"),
-      color: BLURPLE,
+      message:
+        "i love the intensity, but your eyes and brain need a tiny break. look at something that isn't a screen for a sec 😌",
     },
     {
-      title: "tiny clarity check",
-      description: [
-        "if someone asked what you’re doing",
-        "could you explain it cleanly",
-      ].join("\n"),
-      color: BLURPLE,
+      message:
+        "you've been going hard — take a short break. walk around, stare at a wall, whatever. then back to it!",
     },
     {
-      title: "okay dramatic zoom out moment",
-      description: [
-        "what actually matters in this hour",
-        "",
-        "do that",
-      ].join("\n"),
-      color: BLURPLE,
+      message:
+        "breathe. stretch. maybe get a snack. you'll come back sharper, i promise ✨",
     },
     {
-      title: "quick reset",
-      description: [
-        "unclench jaw",
-        "shoulders down",
-        "",
-        "choose the next move deliberately 😌",
-      ].join("\n"),
-      color: BLURPLE,
+      message:
+        "be honest 😭 when did you last look away from the screen? do it now — even 60 seconds helps!",
     },
     {
-      title: "be honest 😭",
-      description: [
-        "is this the highest leverage thing",
-        "",
-        "or are we just spiraling stylishly",
-      ].join("\n"),
-      color: BLURPLE,
+      message:
+        "you're doing great, but even heroes need a rest. take a tiny break and come back when you're ready 🤍",
     },
     {
-      title: "you’re powerful when you lock in",
-      description: [
-        "just make sure it’s pointed at the right thing",
-        "",
-        "i’m rooting for you 🫶",
-      ].join("\n"),
-      color: BLURPLE,
+      message:
+        "pause menu moment — hit pause for a bit. grab water, stretch, breathe. the game will still be here 🎮",
     },
   ],
 };
