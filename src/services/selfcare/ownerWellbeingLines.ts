@@ -69,18 +69,18 @@ export const OWNER_WELLBEING_LINES: Record<
     },
     {
       message:
-        "potion time 🧪 sip sip! it's literally free focus. why would we refuse free focus?",
+        "hiiii!! potion time 🧪 sip sip! it's literally free focus. why would we refuse free focus?",
     },
     {
       message:
-        "be so fr — drink water. like right now. then you can go back to being scary productive!",
+        "...drink water. like right now. then you can go back to being scary productive!",
     },
     {
       message:
-        "one glass of water, then back to whatever mastermind plan you're doing :3",
+        "one glass of water :droplet:  then back to whatever mastermind plan you're doing :3",
     },
     {
-      message: "your mana bar's looking low 😅 grab some water and top it off!",
+      message: "yo... your mana bar's looking low :skull: grab some water and top it off!",
     },
   ],
 
@@ -88,11 +88,11 @@ export const OWNER_WELLBEING_LINES: Record<
   break: [
     {
       message:
-        "pause for a sec — unclench your jaw, shoulders down. take a breath. you're doing great <3",
+        "HELLO!! pause for a sec — unclench your jaw, shoulders down. take a breath. you're doing great <3",
     },
     {
       message:
-        "step away from the screen for like two minutes. stretch a little. your body will thank you!",
+        "heyy, step away from the screen for like two minutes. stretch a little. your body will thank you!",
     },
     {
       message:
