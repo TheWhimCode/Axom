@@ -45,8 +45,8 @@ export function startSessionListener(client: Client) {
 
       await handleSessionPaid(sessionId);
 
-    } catch {
-      // intentionally silent
+    } catch (err) {
+      console.error("[sessionPaid] onNotification error:", err);
     }
   }
 
@@ -76,7 +76,8 @@ SELECT
   "notes",
   "followups",
   "confirmationSent",
-  "bookingOwnerSent"
+  "bookingOwnerSent",
+  "champions"
 FROM "Session"
 WHERE id = $1
       `,
@@ -120,6 +121,7 @@ WHERE id = $1
 
       paidCount,
       followups: row.followups ?? 0,
+      champions: row.champions ?? null,
     };
 
     // --------------------------

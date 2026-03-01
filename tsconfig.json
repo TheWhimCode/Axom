@@ -17,9 +17,8 @@
     "lib": ["ES2021", "DOM"],
     "types": [],
     "baseUrl": ".",
-    "paths": {
-    "@/*": ["src/*"]
-  }
+    "paths": { "@/*": ["src/*"] }
   },
-  "include": ["index.ts", "src/**/*.ts"]
+  "include": ["index.ts", "src/**/*.ts"],
+  "exclude": ["**/Youtube.ts"]
 }

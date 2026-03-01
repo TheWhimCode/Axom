@@ -16,6 +16,7 @@ export type StudentConfirmPayload = {
 
   paidCount: number;
   followups: number;
+  champions: string[] | null;
 };
 
 type MainDMKind = "default" | "eloRush" | "returning";
@@ -111,6 +112,7 @@ export async function notifyStudent(
     sessionType: payload.sessionType,
     studentName: payload.studentName,
     riotTag: payload.riotTag,
+    champions: payload.champions,
   }).catch(() => {});
 
   if (hasFollowup) {

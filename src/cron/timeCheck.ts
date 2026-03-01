@@ -24,6 +24,7 @@ type SessionRow = {
   bookingOwnerSent?: boolean;
   notes: string | null;
   followups?: number;
+  champions?: string[] | null;
 };
 
 function wait(ms: number) {
@@ -145,7 +146,8 @@ async function checkUnsentPaymentDMs(client: Client) {
       "scheduledMinutes",
       "notes",
       "confirmationSent",
-      "bookingOwnerSent"
+      "bookingOwnerSent",
+      "champions"
     FROM "Session"
     WHERE status = 'paid'
       AND ("confirmationSent" = FALSE OR "bookingOwnerSent" = FALSE)
@@ -178,6 +180,7 @@ async function checkUnsentPaymentDMs(client: Client) {
       notes: row.notes ?? null,
       paidCount,
       followups: row.followups ?? 0,
+      champions: row.champions ?? null,
     };
 
     if (row.confirmationSent === false) {

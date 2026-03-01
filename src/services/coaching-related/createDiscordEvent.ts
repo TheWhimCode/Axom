@@ -16,6 +16,7 @@ type CreateDiscordEventPayload = {
   // optional extra info for title/description (currently unused)
   studentName?: string | null;
   riotTag?: string | null;
+  champions?: string[] | null;
 };
 
 export async function createDiscordEvent(
@@ -43,7 +44,11 @@ export async function createDiscordEvent(
 
   const end = new Date(start.getTime() + p.scheduledMinutes * 60_000);
 
-  const title = `Coaching:`;
+  const championsPart =
+    p.champions && p.champions.length > 0
+      ? " " + p.champions.join(" & ")
+      : "";
+  const title = `Coaching:${championsPart}`;
   const description = [
     `This is a scheduled coaching session with Sho :boom:`,
     `**You're welcome to join, listen, and learn from the session in real time.**`,
