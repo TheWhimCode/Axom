@@ -92,7 +92,7 @@ export function registerDMListener(client: Client) {
               );
             } else {
               await msg.reply(
-                `Marked **${res.rowCount}** ${type} task(s) for **${target}** as done and removed.`
+                `Marked the ${type} as done.`
               );
             }
           } else {
@@ -106,7 +106,7 @@ export function registerDMListener(client: Client) {
               [id, type, target]
             );
 
-            await msg.reply(`Added **${type}** task for **${target}**.`);
+            await msg.reply(`Added **${target}** **${type}**.`);
           }
         } catch (err) {
           logError("receivedDM insert event", err);
