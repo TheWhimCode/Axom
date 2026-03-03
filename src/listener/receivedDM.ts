@@ -1,8 +1,11 @@
 // src/listener/receivedDM.ts
 import type { Client, Message } from "discord.js";
+import { randomUUID } from "crypto";
 import { logError } from "../logger";
+import { pool } from "../db";
 
 const INBOX_CHANNEL_ID = process.env.INBOX_CHANNEL_ID!;
+const OWNER_ID = process.env.OWNER_ID!;
 
 // 10 second cooldown per user
 const CONFIRM_COOLDOWN_MS = 10_000;
@@ -44,13 +47,84 @@ export function registerDMListener(client: Client) {
     const inboxChannel = await getInboxChannel();
     if (!inboxChannel) return;
 
-    // Forward DM to your private inbox channel
-    await inboxChannel.send({
-      content: `**DM from <@${msg.author.id}>**:\n${msg.content || "(no text)"}`,
-    });
+    // Forward DM to your private inbox channel (but not your own DMs)
+    if (msg.author.id !== OWNER_ID) {
+      await inboxChannel.send({
+        content: `**DM from <@${msg.author.id}>**:\n${msg.content || "(no text)"}`,
+      });
+    }
+
+    const rawContent = (msg.content ?? "").trim();
+
+    // Owner-only commands to add followup / analysis events
+    if (msg.author.id === OWNER_ID && rawContent.startsWith("!")) {
+      const [cmdRaw, ...restParts] = rawContent.split(/\s+/);
+      const cmd = cmdRaw ?? "";
+      const type = cmd.slice(1).toLowerCase();
+
+      if (type === "followup" || type === "analysis") {
+        const isDone = restParts[restParts.length - 1]?.toLowerCase() === "done";
+        const target = (isDone ? restParts.slice(0, -1) : restParts).join(" ").trim();
+
+        if (!target) {
+          await msg.reply(
+            "Usage:\n" +
+              "• `!followup <for>` or `!analysis <for>` (e.g. `!followup Axom`)\n" +
+              "• `!followup <for> done` or `!analysis <for> done` to mark as completed."
+          );
+          return;
+        }
+
+        try {
+          if (isDone) {
+            const res = await pool.query(
+              `
+              DELETE FROM "axom"."events"
+              WHERE "type" = $1 AND "for" = $2
+              RETURNING id
+              `,
+              [type, target]
+            );
+
+            if (res.rowCount === 0) {
+              await msg.reply(
+                `No open **${type}** tasks found for **${target}**.`
+              );
+            } else {
+              await msg.reply(
+                `Marked **${res.rowCount}** ${type} task(s) for **${target}** as done and removed.`
+              );
+            }
+          } else {
+            const id = randomUUID();
+
+            await pool.query(
+              `
+              INSERT INTO "axom"."events" (id, "type", "for")
+              VALUES ($1, $2, $3)
+              `,
+              [id, type, target]
+            );
+
+            await msg.reply(`Added **${type}** task for **${target}**.`);
+          }
+        } catch (err) {
+          logError("receivedDM insert event", err);
+          const errMsg =
+            err && typeof err === "object" && "message" in err
+              ? String((err as Error).message)
+              : String(err);
+          await msg.reply(
+            `I couldn't save that follow-up in the database.\nError: ${errMsg}`
+          );
+        }
+
+        return;
+      }
+    }
 
     // Minimum length requirement (8 characters, ignoring spaces)
-    const content = (msg.content ?? "").trim();
+    const content = rawContent;
     if (content.length < 8) return;
 
     // Cooldown check

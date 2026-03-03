@@ -8,6 +8,13 @@ import type { SessionRow } from "../types/session";
 const OWNER_ID = process.env.OWNER_ID!;
 const TZ = process.env.OWNER_TZ ?? "Europe/Berlin";
 
+type EventRow = {
+  id: string;
+  createdAt: Date;
+  type: string;
+  forField: string;
+};
+
 // Send at 08:00 local time.
 // If the bot was offline at exactly 08:00, it will still send once as long as it's
 // between 08:00 and 12:00 local time and hasn't sent yet today.
@@ -16,23 +23,25 @@ const CUTOFF_HOUR = Number(process.env.OWNER_MORNING_CUTOFF_HOUR ?? 12);
 
 let lastSentDayKey: string | null = null;
 
-function makeMsgForDay(now: DateTime, rows: SessionRow[]) {
+function formatEventLine(now: DateTime, ev: EventRow): string {
+  const created = DateTime.fromJSDate(ev.createdAt).setZone(TZ);
+  const diff = now.diff(created, "days").days;
+  const days = Math.max(0, Math.floor(diff));
+
+  const whenStr =
+    days === 0 ? "today" : days === 1 ? "1 day ago" : `${days} days ago`;
+
+  const colorPrefix = days < 3 ? "🔵" : days === 3 ? "🟠" : "🔴";
+
+  return `${colorPrefix} ${ev.type} - ${ev.forField} - ${whenStr}`;
+}
+
+function makeMsgForDay(now: DateTime, rows: SessionRow[], events: EventRow[]) {
   const header = [
     `good morning ☀️`,
     `here’s today (${now.toFormat("ccc, LLL dd")})`,
     ``,
   ].join("\n");
-
-  if (rows.length === 0) {
-    return (
-      header +
-      [
-        `no sessions today 😌`,
-        ``,
-        `free day unlocked 🫶`,
-      ].join("\n")
-    );
-  }
 
   const lines = rows.map((s, idx) => {
     const unix = Math.floor(DateTime.fromJSDate(s.scheduledStart).toSeconds());
@@ -45,15 +54,29 @@ function makeMsgForDay(now: DateTime, rows: SessionRow[]) {
     return `${idx + 1}) <t:${unix}:t> — ${who} — ${type} (${dur})`;
   });
 
-  return (
-    header +
-    [
-      `sessions:`,
-      ...lines,
-      ``,
-      `go be scary productive 🤍`,
-    ].join("\n")
-  );
+  const sessionSection =
+    rows.length === 0
+      ? [
+          `no sessions today 😌`,
+          ``,
+          `free day unlocked 🫶`,
+        ].join("\n")
+      : [
+          `sessions:`,
+          ...lines,
+          ``,
+          `go be scary productive 🤍`,
+        ].join("\n");
+
+  const taskLines = events.map((ev) => formatEventLine(now, ev));
+
+  const tasksSection = [
+    `tasks:`,
+    `Here's what needs to be done`,
+    ...(taskLines.length > 0 ? taskLines : [`(no open requests)`]),
+  ].join("\n");
+
+  return header + [sessionSection, ``, tasksSection].join("\n");
 }
 
 async function sendOwnerMorningSchedule(client: Client) {
@@ -97,7 +120,19 @@ async function sendOwnerMorningSchedule(client: Client) {
     [startUtc, endUtc]
   );
 
-  const msg = makeMsgForDay(now, res.rows);
+  const eventsRes = await pool.query<EventRow>(
+    `
+    SELECT
+      id,
+      "createdAt",
+      type,
+      "for" AS "forField"
+    FROM "axom"."events"
+    ORDER BY "createdAt" ASC
+    `
+  );
+
+  const msg = makeMsgForDay(now, res.rows, eventsRes.rows);
 
   try {
     await owner.send(msg);
