@@ -136,5 +136,5 @@ export function startOwnerMorningScheduleCron(client: Client) {
   void sendOwnerMorningSchedule(client);
   setInterval(() => {
     void sendOwnerMorningSchedule(client);
-  }, 60 * 1000);
+  }, 60 * 60 * 1000);
 }

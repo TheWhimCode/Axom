@@ -213,9 +213,9 @@ async function runTimeChecks(client: Client) {
 export function startTimeCheckCron(client: Client) {
   void runTimeChecks(client);
 
-  const FIVE_MINUTES_MS = 5 * 60 * 1000;
+  const ONE_HOUR_MS = 60 * 60 * 1000;
 
   setInterval(() => {
     void runTimeChecks(client);
-  }, FIVE_MINUTES_MS);
+  }, ONE_HOUR_MS);
 }
