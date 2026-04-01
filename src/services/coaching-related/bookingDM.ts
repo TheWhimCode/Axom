@@ -16,9 +16,12 @@ export interface BookingPayload {
   notes: string | null;
 }
 
-export async function notifyOwner(client: Client, p: BookingPayload) {
+export async function notifyOwner(
+  client: Client,
+  p: BookingPayload
+): Promise<boolean> {
   const owner = await client.users.fetch(OWNER_ID).catch(() => null);
-  if (!owner) return;
+  if (!owner) return false;
 
   const {
     studentName,
@@ -66,7 +69,14 @@ export async function notifyOwner(client: Client, p: BookingPayload) {
       }
     );
 
-  await withRetry(() => owner.send({ embeds: [embed] }), { attempts: 2, delayMs: 1500 }).catch(
-    (err) => logError("bookingDM notifyOwner", err)
-  );
+  try {
+    await withRetry(() => owner.send({ embeds: [embed] }), {
+      attempts: 2,
+      delayMs: 1500,
+    });
+    return true;
+  } catch (err) {
+    logError("bookingDM notifyOwner", err);
+    return false;
+  }
 }

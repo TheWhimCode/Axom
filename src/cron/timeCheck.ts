@@ -3,8 +3,6 @@ import { pool } from "../db";
 import type { SessionRow } from "../types/session";
 import { notifyStudentReminder } from "../services/coaching-related/studentReminderDM";
 import { notifyStudentFollowup } from "../services/coaching-related/studentFollowupDM/index";
-import { notifyStudent } from "../services/coaching-related/studentConfirmDM";
-import { notifyOwner } from "../services/coaching-related/bookingDM";
 
 function wait(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -114,100 +112,12 @@ async function checkPastSessions(client: Client) {
 }
 
 // -------------------------------------------------------
-// 3) PAYMENT DMs missed if bot/server was offline
-// -------------------------------------------------------
-async function checkUnsentPaymentDMs(client: Client) {
-  const res = await pool.query<SessionRow>(`
-    SELECT
-      id,
-      "studentId",
-      "followups",
-      "discordId",
-      "riotTag",
-      "sessionType",
-      ("scheduledStart" AT TIME ZONE 'UTC') AS "scheduledStart",
-      "scheduledMinutes",
-      "notes",
-      "confirmationSent",
-      "bookingOwnerSent",
-      "champions"
-    FROM "Session"
-    WHERE status = 'paid'
-      AND ("confirmationSent" = FALSE OR "bookingOwnerSent" = FALSE)
-    ORDER BY "scheduledStart" ASC
-    LIMIT 100
-  `);
-
-  const studentIds = [...new Set(res.rows.map((r) => r.studentId).filter(Boolean))] as string[];
-  const paidCountByStudent = new Map<string, number>();
-  if (studentIds.length > 0) {
-    const countRes = await pool.query<{ studentId: string; count: string }>(
-      `SELECT "studentId", COUNT(*)::text AS count
-       FROM "Session"
-       WHERE status = 'paid' AND "studentId" = ANY($1)
-       GROUP BY "studentId"`,
-      [studentIds]
-    );
-    for (const r of countRes.rows) {
-      paidCountByStudent.set(r.studentId, parseInt(r.count, 10) || 0);
-    }
-  }
-
-  for (const row of res.rows) {
-    const paidCount = row.studentId ? paidCountByStudent.get(row.studentId) ?? 0 : 0;
-
-    const payload = {
-      discordId: row.discordId,
-      studentName: null,
-      riotTag: row.riotTag,
-      scheduledStart: row.scheduledStart.toISOString(),
-      scheduledMinutes: row.scheduledMinutes,
-      sessionType: row.sessionType,
-      notes: row.notes ?? null,
-      paidCount,
-      followups: row.followups ?? 0,
-      champions: row.champions ?? null,
-    };
-
-    if (row.confirmationSent === false) {
-      const claimed = await pool.query(
-        `
-        UPDATE "Session"
-        SET "confirmationSent" = TRUE
-        WHERE id = $1 AND "confirmationSent" = FALSE
-        RETURNING id
-        `,
-        [row.id]
-      );
-
-      if (claimed.rowCount === 1) {
-        const ok = await notifyStudent(client, payload);
-
-        if (!ok) {
-          await pool.query(
-            `UPDATE "Session" SET "confirmationSent" = FALSE WHERE id = $1`,
-            [row.id]
-          );
-        }
-      }
-    }
-
-    if (row.bookingOwnerSent === false) {
-      await notifyOwner(client, payload);
-      await pool.query(
-        `UPDATE "Session" SET "bookingOwnerSent" = TRUE WHERE id = $1`,
-        [row.id]
-      );
-    }
-  }
-}
-
+// Payment confirmation DMs are triggered by sho-coaching via HTTP webhook.
 // -------------------------------------------------------
 
 async function runTimeChecks(client: Client) {
   await checkUpcomingSessions(client);
   await checkPastSessions(client);
-  await checkUnsentPaymentDMs(client);
 }
 
 export function startTimeCheckCron(client: Client) {

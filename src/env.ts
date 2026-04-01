@@ -5,6 +5,8 @@ const REQUIRED = [
   "INBOX_CHANNEL_ID",
   "DISCORD_SERVER_ID",
   "STAGE_CHANNEL_ID",
+  "DISCORD_BOT_WEBHOOK_SECRET",
+  "DISCORD_BOT_WEBHOOK_URL",
 ] as const;
 
 export function validateEnv(): void {
