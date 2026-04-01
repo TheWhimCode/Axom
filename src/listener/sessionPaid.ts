@@ -11,6 +11,29 @@ const { Client: PgClient } = pg;
 
 export const sessionEvents = new EventEmitter();
 
+/** Serialize NOTIFY handling so bursts can't stack unbounded async DB + Discord work. */
+const paidQueue: string[] = [];
+let paidQueueRunning = false;
+
+async function enqueueSessionPaid(
+  client: Client,
+  handleSessionPaid: (sessionId: string) => Promise<void>,
+  sessionId: string
+) {
+  paidQueue.push(sessionId);
+  if (paidQueueRunning) return;
+  paidQueueRunning = true;
+  try {
+    while (paidQueue.length > 0) {
+      const id = paidQueue.shift()!;
+      await handleSessionPaid(id);
+      await new Promise((r) => setTimeout(r, 150));
+    }
+  } finally {
+    paidQueueRunning = false;
+  }
+}
+
 export function startSessionListener(client: Client): () => Promise<void> {
   let db: pg.Client | null = null;
   let retryTimeoutId: ReturnType<typeof setTimeout> | null = null;
@@ -53,8 +76,7 @@ export function startSessionListener(client: Client): () => Promise<void> {
 
       sessionEvents.emit("sessionPaid", { sessionId });
 
-      await handleSessionPaid(sessionId);
-
+      await enqueueSessionPaid(client, handleSessionPaid, sessionId);
     } catch (err) {
       logError("sessionPaid onNotification", err);
     }

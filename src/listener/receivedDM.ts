@@ -3,13 +3,26 @@ import type { Client, Message } from "discord.js";
 import { randomUUID } from "crypto";
 import { logError } from "../logger";
 import { pool } from "../db";
+import { createRateLimiter } from "../rateLimit";
 
 const INBOX_CHANNEL_ID = process.env.INBOX_CHANNEL_ID!;
 const OWNER_ID = process.env.OWNER_ID!;
 
+/** Soft cap on DM handling per user (avoids channel/DB/API churn if abused). */
+const nonOwnerDmPerMin = createRateLimiter({ windowMs: 60_000, max: 35 });
+const ownerDmPerMin = createRateLimiter({ windowMs: 60_000, max: 90 });
+/** Inbox mirror forwards only (non-owner). */
+const inboxForwardPerMin = createRateLimiter({ windowMs: 60_000, max: 30 });
+/** Owner !followup / !analysis DB ops. */
+const ownerCommandPerMin = createRateLimiter({ windowMs: 60_000, max: 45 });
+/** Auto-confirm replies: short cooldown + hourly ceiling. */
+const confirmHourly = createRateLimiter({ windowMs: 60 * 60_000, max: 72 });
+
 // 10 second cooldown per user
 const CONFIRM_COOLDOWN_MS = 10_000;
 const lastConfirmSent = new Map<string, number>();
+
+const MAX_FORWARD_CHARS = 3500;
 
 const CONFIRM_MESSAGES = [
   "Noted!! Will let Sho know :cowboy:",
@@ -44,25 +57,38 @@ export function registerDMListener(client: Client) {
     // Only DM from real users (not bot, not server messages)
     if (msg.guild || msg.author.bot) return;
 
+    const isOwner = msg.author.id === OWNER_ID;
+    const dmOk = isOwner
+      ? ownerDmPerMin.tryTake(msg.author.id)
+      : nonOwnerDmPerMin.tryTake(msg.author.id);
+    if (!dmOk) return;
+
     const inboxChannel = await getInboxChannel();
     if (!inboxChannel) return;
 
     // Forward DM to your private inbox channel (but not your own DMs)
-    if (msg.author.id !== OWNER_ID) {
+    if (!isOwner && inboxForwardPerMin.tryTake(msg.author.id)) {
+      const text = msg.content ?? "";
+      const forwardBody =
+        text.length > MAX_FORWARD_CHARS
+          ? `${text.slice(0, MAX_FORWARD_CHARS)}…`
+          : text || "(no text)";
       await inboxChannel.send({
-        content: `**DM from <@${msg.author.id}>**:\n${msg.content || "(no text)"}`,
+        content: `**DM from <@${msg.author.id}>**:\n${forwardBody}`,
       });
     }
 
     const rawContent = (msg.content ?? "").trim();
 
     // Owner-only commands to add followup / analysis events
-    if (msg.author.id === OWNER_ID && rawContent.startsWith("!")) {
+    if (isOwner && rawContent.startsWith("!")) {
       const [cmdRaw, ...restParts] = rawContent.split(/\s+/);
       const cmd = cmdRaw ?? "";
       const type = cmd.slice(1).toLowerCase();
 
       if (type === "followup" || type === "analysis") {
+        if (!ownerCommandPerMin.tryTake("owner-cmd")) return;
+
         const isDone = restParts[restParts.length - 1]?.toLowerCase() === "done";
         const target = (isDone ? restParts.slice(0, -1) : restParts).join(" ").trim();
 
@@ -131,6 +157,7 @@ export function registerDMListener(client: Client) {
     const now = Date.now();
     const lastSent = lastConfirmSent.get(msg.author.id) ?? 0;
     if (now - lastSent < CONFIRM_COOLDOWN_MS) return;
+    if (!confirmHourly.tryTake(msg.author.id)) return;
 
     lastConfirmSent.set(msg.author.id, now);
 

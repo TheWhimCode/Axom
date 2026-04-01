@@ -15,6 +15,15 @@ type RescheduleNotifyPayload = {
   newStart?: string;
 };
 
+type RescheduleJob = {
+  sessionId: string;
+  oldStart: string | null;
+  newStart: string | null;
+};
+
+const rescheduleQueue: RescheduleJob[] = [];
+let rescheduleQueueRunning = false;
+
 export function startSessionRescheduledListener(client: Client): () => Promise<void> {
   let db: pg.Client | null = null;
   let retryTimeoutId: ReturnType<typeof setTimeout> | null = null;
@@ -74,48 +83,66 @@ export function startSessionRescheduledListener(client: Client): () => Promise<v
       return;
     }
 
+    rescheduleQueue.push({
+      sessionId,
+      oldStart: oldStart ?? null,
+      newStart: newStart ?? null,
+    });
+    void drainRescheduleQueue(client, db);
+  }
+
+  async function drainRescheduleQueue(
+    client: Client,
+    db: pg.Client | null
+  ) {
+    if (!db || rescheduleQueueRunning) return;
+    rescheduleQueueRunning = true;
     try {
-      // Fetch what we need to DM
-      const res = await db!.query(
-        `
-        SELECT
-          id, status, "discordId", "riotTag", "sessionType",
-          "scheduledStart", "scheduledMinutes", notes
-        FROM "Session"
-        WHERE id = $1
-        `,
-        [sessionId]
-      );
+      while (rescheduleQueue.length > 0) {
+        const job = rescheduleQueue.shift()!;
+        try {
+          const res = await db.query(
+            `
+            SELECT
+              id, status, "discordId", "riotTag", "sessionType",
+              "scheduledStart", "scheduledMinutes", notes
+            FROM "Session"
+            WHERE id = $1
+            `,
+            [job.sessionId]
+          );
 
-      const row = res.rows[0];
-      if (!row) return;
+          const row = res.rows[0];
+          if (!row) continue;
+          if (row.status !== "paid") continue;
 
-      // Only DM for paid sessions (keep consistent with your other flows)
-      if (row.status !== "paid") return;
+          const oldStart = job.oldStart;
+          const newStart = job.newStart;
 
-      // Normalize to UTC ISO (with Z) no matter what the trigger sent.
-      // If trigger sent ISO with Z already, this stays correct.
-      // If trigger sent a timezone-less timestamp, Date parsing can be inconsistent,
-      // so we fall back to DB value for newStart when needed.
-      const oldStartISO = oldStart ? new Date(oldStart).toISOString() : null;
-      const newStartISO = newStart
-        ? new Date(newStart).toISOString()
-        : new Date(row.scheduledStart).toISOString();
+          const oldStartISO = oldStart ? new Date(oldStart).toISOString() : null;
+          const newStartISO = newStart
+            ? new Date(newStart).toISOString()
+            : new Date(row.scheduledStart).toISOString();
 
-      const dmPayload = {
-        discordId: (row.discordId as string | null) ?? null,
-        riotTag: (row.riotTag as string | null) ?? null,
-        sessionType: row.sessionType as string,
-        scheduledMinutes: row.scheduledMinutes as number,
-        notes: (row.notes as string | null) ?? null,
-        oldStartISO,
-        newStartISO,
-      };
+          const dmPayload = {
+            discordId: (row.discordId as string | null) ?? null,
+            riotTag: (row.riotTag as string | null) ?? null,
+            sessionType: row.sessionType as string,
+            scheduledMinutes: row.scheduledMinutes as number,
+            notes: (row.notes as string | null) ?? null,
+            oldStartISO,
+            newStartISO,
+          };
 
-      await notifyStudentRescheduled(client, dmPayload);
-      await notifyOwnerRescheduled(client, dmPayload);
-    } catch (err) {
-      logError("sessionRescheduled handler", err);
+          await notifyStudentRescheduled(client, dmPayload);
+          await notifyOwnerRescheduled(client, dmPayload);
+        } catch (err) {
+          logError("sessionRescheduled handler", err);
+        }
+        await new Promise((r) => setTimeout(r, 150));
+      }
+    } finally {
+      rescheduleQueueRunning = false;
     }
   }
 

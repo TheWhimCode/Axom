@@ -31,6 +31,8 @@ async function checkUpcomingSessions(client: Client) {
       AND ("scheduledStart" AT TIME ZONE 'UTC')
             BETWEEN NOW() AND NOW() + interval '6 hours'
       AND "reminderSent" = FALSE
+    ORDER BY "scheduledStart" ASC
+    LIMIT 80
   `);
 
   for (const row of res.rows) {
@@ -80,6 +82,8 @@ async function checkPastSessions(client: Client) {
             BETWEEN NOW() - interval '48 hours'
                 AND NOW() - interval '2 hours'
       AND "followupSent" = FALSE
+    ORDER BY "scheduledStart" ASC
+    LIMIT 40
   `);
 
   for (const row of res.rows) {
@@ -130,6 +134,8 @@ async function checkUnsentPaymentDMs(client: Client) {
     FROM "Session"
     WHERE status = 'paid'
       AND ("confirmationSent" = FALSE OR "bookingOwnerSent" = FALSE)
+    ORDER BY "scheduledStart" ASC
+    LIMIT 100
   `);
 
   const studentIds = [...new Set(res.rows.map((r) => r.studentId).filter(Boolean))] as string[];

@@ -112,6 +112,7 @@ async function sendOwnerMorningSchedule(client: Client) {
       "for" AS "forField"
     FROM "axom"."events"
     ORDER BY "createdAt" ASC
+    LIMIT 500
     `
   );
 
