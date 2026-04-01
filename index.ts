@@ -10,13 +10,12 @@ import http from "http";
 import { closePool } from "./src/db";
 import { validateEnv } from "./src/env";
 import { logError } from "./src/logger";
-import { startSessionRescheduledListener } from "./src/listener/sessionRescheduled";
 import { startTimeCheckCron } from "./src/cron/timeCheck";
 import { registerDMListener } from "./src/listener/receivedDM";
 import { startTwitchLiveChecker } from "./src/services/notifiers/Twitch";
 import { startOwnerWellbeingCron } from "./src/cron/selfcare";
 import { startOwnerMorningScheduleCron } from "./src/cron/sessionsToday";
-import { startSessionPaidWebhookServer } from "./src/http/sessionPaidWebhookServer";
+import { startCoachingWebhookServer } from "./src/http/coachingWebhookServer";
 
 validateEnv();
 
@@ -32,11 +31,10 @@ const client = new Client({
   partials: [Partials.Channel],
 });
 
-let stopSessionRescheduled: (() => Promise<void>) | null = null;
 let httpServer: http.Server | null = null;
 
 /** Listen immediately so platform health checks work before Discord is connected. */
-httpServer = startSessionPaidWebhookServer(client);
+httpServer = startCoachingWebhookServer(client);
 
 let shuttingDown = false;
 async function gracefulShutdown() {
@@ -54,7 +52,6 @@ async function gracefulShutdown() {
 
   client.destroy();
 
-  await stopSessionRescheduled?.().catch((err) => logError("shutdown sessionRescheduled", err));
   await closePool().catch((err) => logError("shutdown pool", err));
 
   console.log("[shutdown] Done.");
@@ -72,7 +69,6 @@ client.once(Events.ClientReady, () => {
     status: "online",
   });
 
-  stopSessionRescheduled = startSessionRescheduledListener(client);
   startTimeCheckCron(client);
   registerDMListener(client);
   startTwitchLiveChecker(client);

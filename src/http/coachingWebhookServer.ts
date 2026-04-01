@@ -6,6 +6,7 @@ import {
   deliverSessionPaidNotifications,
   type WebhookSessionPaidBody,
 } from "../handlers/sessionPaidFromWebhook";
+import { deliverSessionRescheduledNotifications } from "../handlers/sessionRescheduledFromWebhook";
 
 const MAX_BODY_BYTES = 512 * 1024;
 
@@ -41,7 +42,7 @@ function jsonResponse(
   res.end(payload);
 }
 
-export function startSessionPaidWebhookServer(client: Client): http.Server {
+export function startCoachingWebhookServer(client: Client): http.Server {
   const secret = process.env.DISCORD_BOT_WEBHOOK_SECRET!;
   const webhookUrlStr = process.env.DISCORD_BOT_WEBHOOK_URL!;
   let expectedPath: string;
@@ -49,12 +50,12 @@ export function startSessionPaidWebhookServer(client: Client): http.Server {
     expectedPath = new URL(webhookUrlStr).pathname;
   } catch {
     throw new Error(
-      "[webhook] DISCORD_BOT_WEBHOOK_URL must be a valid URL (e.g. https://host/webhook/session-paid)"
+      "[webhook] DISCORD_BOT_WEBHOOK_URL must be a valid URL (e.g. https://host/webhook/coaching)"
     );
   }
   if (!expectedPath || expectedPath === "/") {
     throw new Error(
-      "[webhook] DISCORD_BOT_WEBHOOK_URL must include a path (e.g. .../webhook/session-paid)"
+      "[webhook] DISCORD_BOT_WEBHOOK_URL must include a path (e.g. .../webhook/coaching)"
     );
   }
 
@@ -109,16 +110,26 @@ export function startSessionPaidWebhookServer(client: Client): http.Server {
           return;
         }
 
-        if (
-          typeof parsed !== "object" ||
-          parsed === null ||
-          (parsed as { type?: string }).type !== "session_paid"
-        ) {
-          jsonResponse(res, 400, { error: "expected type session_paid" });
+        if (typeof parsed !== "object" || parsed === null) {
+          jsonResponse(res, 400, { error: "invalid body" });
           return;
         }
 
-        const session = (parsed as { session?: WebhookSessionPaidBody }).session;
+        const body = parsed as {
+          type?: string;
+          session?: WebhookSessionPaidBody;
+          previousScheduledStart?: string;
+        };
+
+        const eventType = body.type;
+        if (eventType !== "session_paid" && eventType !== "session_rescheduled") {
+          jsonResponse(res, 400, {
+            error: "expected type session_paid or session_rescheduled",
+          });
+          return;
+        }
+
+        const session = body.session;
         if (!session || typeof session !== "object" || !session.id) {
           jsonResponse(res, 400, { error: "missing session.id" });
           return;
@@ -129,28 +140,38 @@ export function startSessionPaidWebhookServer(client: Client): http.Server {
           return;
         }
 
-        await deliverSessionPaidNotifications(client, session);
+        if (eventType === "session_paid") {
+          await deliverSessionPaidNotifications(client, session);
+        } else {
+          const prev = body.previousScheduledStart;
+          if (!prev || typeof prev !== "string") {
+            jsonResponse(res, 400, {
+              error: "missing previousScheduledStart for session_rescheduled",
+            });
+            return;
+          }
+          await deliverSessionRescheduledNotifications(client, session, prev);
+        }
 
         jsonResponse(res, 200, { ok: true });
       } catch (err) {
-        logError("sessionPaidWebhookServer", err);
+        logError("coachingWebhookServer", err);
         const msg = err instanceof Error ? err.message : "internal error";
         jsonResponse(res, 500, { error: msg });
       }
     });
 
     req.on("error", (err) => {
-      logError("sessionPaidWebhookServer request", err);
+      logError("coachingWebhookServer request", err);
       res.writeHead(400);
       res.end();
     });
   });
 
   const port = Number(process.env.PORT ?? process.env.HTTP_PORT ?? 3000);
-  // Bind all interfaces so Railway / Docker can route public traffic to the container.
   server.listen(port, "0.0.0.0", () => {
     console.log(
-      `[webhook] session_paid listening on 0.0.0.0:${port} path ${expectedPath}`
+      `[webhook] coaching events on 0.0.0.0:${port} path ${expectedPath}`
     );
   });
 

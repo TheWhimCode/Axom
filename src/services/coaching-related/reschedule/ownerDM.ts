@@ -19,7 +19,7 @@ export interface OwnerRescheduledPayload {
 export async function notifyOwnerRescheduled(
   client: Client,
   p: OwnerRescheduledPayload
-) {
+): Promise<boolean> {
   const owner = await client.users.fetch(OWNER_ID).catch(() => null);
   if (!owner) return false;
 
@@ -84,8 +84,14 @@ export async function notifyOwnerRescheduled(
     });
   }
 
-  await withRetry(() => owner.send({ embeds: [embed] }), { attempts: 2, delayMs: 1500 }).catch(
-    (err) => logError("reschedule ownerDM", err)
-  );
-  return true;
+  try {
+    await withRetry(() => owner.send({ embeds: [embed] }), {
+      attempts: 2,
+      delayMs: 1500,
+    });
+    return true;
+  } catch (err) {
+    logError("reschedule ownerDM", err);
+    return false;
+  }
 }
