@@ -103,7 +103,9 @@ SELECT
   "followups",
   "confirmationSent",
   "bookingOwnerSent",
-  "champions"
+  "champions",
+  "league",
+  "division"
 FROM "Session"
 WHERE id = $1
       `,
@@ -148,6 +150,8 @@ WHERE id = $1
       paidCount,
       followups: row.followups ?? 0,
       champions: row.champions ?? null,
+      league: row.league ?? null,
+      division: row.division ?? null,
     };
 
     // --------------------------

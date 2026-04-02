@@ -18,4 +18,6 @@ export type SessionRow = {
   reminderSent?: boolean;
   followupSent?: boolean;
   champions?: string[] | null;
+  league?: string | null;
+  division?: string | null;
 };

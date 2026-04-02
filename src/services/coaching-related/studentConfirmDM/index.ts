@@ -18,6 +18,8 @@ export type StudentConfirmPayload = {
   paidCount: number;
   followups: number;
   champions: string[] | null;
+  league: string | null;
+  division: string | null;
 };
 
 type MainDMKind = "default" | "eloRush" | "returning";
@@ -114,6 +116,8 @@ export async function notifyStudent(
     studentName: payload.studentName,
     riotTag: payload.riotTag,
     champions: payload.champions,
+    league: payload.league,
+    division: payload.division,
   }).catch((err) => logError("studentConfirmDM createDiscordEvent", err));
 
   if (hasFollowup) {

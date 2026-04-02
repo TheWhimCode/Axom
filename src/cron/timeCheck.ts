@@ -126,7 +126,9 @@ async function checkUnsentPaymentDMs(client: Client) {
       "notes",
       "confirmationSent",
       "bookingOwnerSent",
-      "champions"
+      "champions",
+      "league",
+      "division"
     FROM "Session"
     WHERE status = 'paid'
       AND ("confirmationSent" = FALSE OR "bookingOwnerSent" = FALSE)
@@ -161,6 +163,8 @@ async function checkUnsentPaymentDMs(client: Client) {
       paidCount,
       followups: row.followups ?? 0,
       champions: row.champions ?? null,
+      league: row.league ?? null,
+      division: row.division ?? null,
     };
 
     if (row.confirmationSent === false) {
