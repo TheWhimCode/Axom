@@ -121,6 +121,9 @@ export function startCoachingWebhookServer(client: Client): http.Server {
           session?: SessionPaidSessionPayload;
           previousScheduledStart?: string;
           rank?: SessionPaidRankPayload;
+          /** Optional top-level champions (merged into session for paid events) */
+          champions?: string[] | string | null;
+          champion?: string | null;
         };
 
         const eventType = body.type;
@@ -145,7 +148,14 @@ export function startCoachingWebhookServer(client: Client): http.Server {
         if (eventType === "session_paid") {
           const rank =
             body.rank && typeof body.rank === "object" ? body.rank : undefined;
-          await deliverSessionPaidNotifications(client, session, rank);
+          const mergedSession: SessionPaidSessionPayload = {
+            ...session,
+            ...(body.champions != null ? { champions: body.champions } : {}),
+            ...(body.champion != null && body.champion !== ""
+              ? { champion: String(body.champion) }
+              : {}),
+          };
+          await deliverSessionPaidNotifications(client, mergedSession, rank);
         } else {
           const prev = body.previousScheduledStart;
           if (!prev || typeof prev !== "string") {

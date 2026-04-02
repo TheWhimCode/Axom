@@ -39,7 +39,9 @@ export type SessionPaidSessionPayload = {
   slotStartISO?: string;
   /** Only if sho-coaching adds them to webhook select later */
   notes?: string | null;
-  champions?: string[] | null;
+  /** Array of champion names, or JSON string, or single `champion` */
+  champions?: string[] | string | null;
+  champion?: string | null;
   /** Legacy flat rank; prefer top-level `rank` on the webhook body */
   league?: string | null;
   division?: string | null;
@@ -100,10 +102,62 @@ async function resolvePaidCount(session: SessionPaidSessionPayload): Promise<num
   return 1;
 }
 
+/** Normalize champions from webhook + DB when payload omits or uses alternate shapes. */
+async function resolveChampions(
+  session: SessionPaidSessionPayload
+): Promise<string[] | null> {
+  const raw = session.champions;
+  if (Array.isArray(raw) && raw.length > 0) {
+    return raw.map((c) => String(c).trim()).filter(Boolean);
+  }
+  if (typeof raw === "string" && raw.trim()) {
+    try {
+      const parsed = JSON.parse(raw) as unknown;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed.map((c) => String(c).trim()).filter(Boolean);
+      }
+    } catch {
+      /* not JSON — single name */
+    }
+    return [raw.trim()];
+  }
+  const single = session.champion?.trim();
+  if (single) return [single];
+
+  if (session.id) {
+    try {
+      const r = await pool.query<{ champions: unknown }>(
+        `SELECT "champions" FROM "Session" WHERE id = $1 LIMIT 1`,
+        [session.id]
+      );
+      const row = r.rows[0];
+      const c = row?.champions;
+      if (Array.isArray(c) && c.length > 0) {
+        return c.map((x) => String(x).trim()).filter(Boolean);
+      }
+      if (typeof c === "string" && c.trim()) {
+        try {
+          const p = JSON.parse(c) as unknown;
+          if (Array.isArray(p) && p.length > 0) {
+            return p.map((x) => String(x).trim()).filter(Boolean);
+          }
+        } catch {
+          /* ignore */
+        }
+      }
+    } catch (err) {
+      logError("resolveChampions Session lookup", err);
+    }
+  }
+
+  return null;
+}
+
 function buildStudentPayload(
   session: SessionPaidSessionPayload,
   paidCount: number,
-  rank: SessionPaidRankPayload | null | undefined
+  rank: SessionPaidRankPayload | null | undefined,
+  championsResolved: string[] | null
 ): StudentConfirmPayload {
   const scheduledStart =
     session.scheduledStart ?? session.slotStartISO ?? "";
@@ -134,7 +188,7 @@ function buildStudentPayload(
     notes: session.notes ?? null,
     paidCount,
     followups: session.followups ?? 0,
-    champions: session.champions ?? null,
+    champions: championsResolved,
     league,
     division,
   };
@@ -153,7 +207,8 @@ async function deliverOnce(
   }
 
   const paidCount = await resolvePaidCount(session);
-  const payload = buildStudentPayload(session, paidCount, rank);
+  const championsResolved = await resolveChampions(session);
+  const payload = buildStudentPayload(session, paidCount, rank, championsResolved);
 
   if (!payload.discordId) {
     throw new Error("missing session.discordId; cannot DM student");

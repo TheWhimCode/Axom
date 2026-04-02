@@ -49,10 +49,23 @@ export async function createDiscordEvent(
 
   const champPart =
     p.champions && p.champions.length > 0 ? p.champions.join(" & ") : "";
-  const rankPart = [p.league, p.division]
-    .map((s) => (typeof s === "string" ? s.trim() : ""))
-    .filter(Boolean)
-    .join(" ");
+
+  const leagueTrim = typeof p.league === "string" ? p.league.trim() : "";
+  const divisionTrim = typeof p.division === "string" ? p.division.trim() : "";
+  /** Master / Grandmaster / Challenger have no I–IV division in display */
+  const apexTier = (() => {
+    const u = leagueTrim.toUpperCase().replace(/[\s_-]+/g, "");
+    return (
+      u === "MASTER" ||
+      u === "GRANDMASTER" ||
+      u === "CHALLENGER"
+    );
+  })();
+  const rankPart = leagueTrim
+    ? apexTier
+      ? leagueTrim
+      : [leagueTrim, divisionTrim].filter(Boolean).join(" ")
+    : divisionTrim;
 
   let title = "Coaching:";
   if (champPart && rankPart) {
