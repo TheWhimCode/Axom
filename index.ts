@@ -6,16 +6,16 @@ import {
   Partials,
 } from "discord.js";
 
+import http from "http";
 import { closePool } from "./src/db";
 import { validateEnv } from "./src/env";
 import { logError } from "./src/logger";
-import { startSessionListener } from "./src/listener/sessionPaid";
-import { startSessionRescheduledListener } from "./src/listener/sessionRescheduled";
 import { startTimeCheckCron } from "./src/cron/timeCheck";
 import { registerDMListener } from "./src/listener/receivedDM";
 import { startTwitchLiveChecker } from "./src/services/notifiers/Twitch";
 import { startOwnerWellbeingCron } from "./src/cron/selfcare";
 import { startOwnerMorningScheduleCron } from "./src/cron/sessionsToday";
+import { startCoachingWebhookServer } from "./src/http/coachingWebhookServer";
 
 validateEnv();
 
@@ -31,8 +31,10 @@ const client = new Client({
   partials: [Partials.Channel],
 });
 
-let stopSessionPaid: (() => Promise<void>) | null = null;
-let stopSessionRescheduled: (() => Promise<void>) | null = null;
+let httpServer: http.Server | null = null;
+
+/** Listen immediately so platform health checks work before Discord is connected. */
+httpServer = startCoachingWebhookServer(client);
 
 let shuttingDown = false;
 async function gracefulShutdown() {
@@ -40,10 +42,16 @@ async function gracefulShutdown() {
   shuttingDown = true;
   console.log("[shutdown] Stopping…");
 
+  await new Promise<void>((resolve) => {
+    if (!httpServer) {
+      resolve();
+      return;
+    }
+    httpServer.close(() => resolve());
+  }).catch((err) => logError("shutdown http", err));
+
   client.destroy();
 
-  await stopSessionPaid?.().catch((err) => logError("shutdown sessionPaid", err));
-  await stopSessionRescheduled?.().catch((err) => logError("shutdown sessionRescheduled", err));
   await closePool().catch((err) => logError("shutdown pool", err));
 
   console.log("[shutdown] Done.");
@@ -61,8 +69,6 @@ client.once(Events.ClientReady, () => {
     status: "online",
   });
 
-  stopSessionPaid = startSessionListener(client);
-  stopSessionRescheduled = startSessionRescheduledListener(client);
   startTimeCheckCron(client);
   registerDMListener(client);
   startTwitchLiveChecker(client);
