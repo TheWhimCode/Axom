@@ -7,6 +7,38 @@ import {
 } from "discord.js";
 import { logError } from "../../logger";
 
+/** e.g. EMERALD IV → Emerald IV, MASTER → Master */
+function formatRankTitleCase(s: string): string {
+  const trimmed = s.trim();
+  if (!trimmed) return s;
+
+  const roman = new Set([
+    "I",
+    "II",
+    "III",
+    "IV",
+    "V",
+    "VI",
+    "VII",
+    "VIII",
+    "IX",
+    "X",
+    "XI",
+  ]);
+
+  return trimmed
+    .split(/\s+/)
+    .map((word) => {
+      const w = word.trim();
+      if (!w) return w;
+      const upper = w.toUpperCase();
+      if (roman.has(upper)) return upper;
+      if (/^\d+$/.test(w)) return w;
+      return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+    })
+    .join(" ");
+}
+
 type CreateDiscordEventPayload = {
   guildId: string;
   stageChannelId: string;
@@ -67,13 +99,15 @@ export async function createDiscordEvent(
       : [leagueTrim, divisionTrim].filter(Boolean).join(" ")
     : divisionTrim;
 
+  const rankDisplay = rankPart ? formatRankTitleCase(rankPart) : "";
+
   let title = "Coaching:";
-  if (champPart && rankPart) {
-    title = `Coaching: ${champPart} || ${rankPart}`;
+  if (champPart && rankDisplay) {
+    title = `Coaching: ${champPart} | ${rankDisplay}`;
   } else if (champPart) {
     title = `Coaching: ${champPart}`;
-  } else if (rankPart) {
-    title = `Coaching: || ${rankPart}`;
+  } else if (rankDisplay) {
+    title = `Coaching: | ${rankDisplay}`;
   }
   const description = [
     `This is a scheduled coaching session with Sho :boom:`,
