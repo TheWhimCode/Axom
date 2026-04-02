@@ -7,8 +7,11 @@ import {
   type StudentConfirmPayload,
 } from "../services/coaching-related/studentConfirmDM";
 
-/** Payload shape from sho-coaching (fields may grow). */
-export type WebhookSessionPaidBody = {
+/**
+ * Inner `session` object from sho-coaching webhooks (not the full HTTP body).
+ * Top-level envelope: { type, session, rank? }.
+ */
+export type SessionPaidSessionPayload = {
   id: string;
   status?: string;
   sessionType: string;
@@ -29,17 +32,31 @@ export type WebhookSessionPaidBody = {
     name?: string | null;
     discordName?: string | null;
     riotTag?: string | null;
+    puuid?: string | null;
+    server?: string | null;
   };
   slotId?: string;
   slotStartISO?: string;
+  /** Only if sho-coaching adds them to webhook select later */
   notes?: string | null;
   champions?: string[] | null;
+  /** Legacy flat rank; prefer top-level `rank` on the webhook body */
   league?: string | null;
   division?: string | null;
   /** If omitted, we may query the DB by studentId or default to 1. */
   paidCount?: number;
   paidSessionCount?: number;
 };
+
+/** Top-level `rank` next to `session` (tier + division from ranked API). */
+export type SessionPaidRankPayload = {
+  league?: string | null;
+  division?: string | null;
+  platform?: string | null;
+};
+
+/** @deprecated Use SessionPaidSessionPayload */
+export type WebhookSessionPaidBody = SessionPaidSessionPayload;
 
 type StepState = { student: boolean; owner: boolean };
 
@@ -56,7 +73,7 @@ function getState(sessionId: string): StepState {
   return s;
 }
 
-async function resolvePaidCount(session: WebhookSessionPaidBody): Promise<number> {
+async function resolvePaidCount(session: SessionPaidSessionPayload): Promise<number> {
   const direct =
     session.paidCount ?? session.paidSessionCount ?? undefined;
   if (typeof direct === "number" && Number.isFinite(direct)) {
@@ -84,8 +101,9 @@ async function resolvePaidCount(session: WebhookSessionPaidBody): Promise<number
 }
 
 function buildStudentPayload(
-  session: WebhookSessionPaidBody,
-  paidCount: number
+  session: SessionPaidSessionPayload,
+  paidCount: number,
+  rank: SessionPaidRankPayload | null | undefined
 ): StudentConfirmPayload {
   const scheduledStart =
     session.scheduledStart ?? session.slotStartISO ?? "";
@@ -101,6 +119,11 @@ function buildStudentPayload(
     session.student?.discordName ??
     null;
 
+  const league =
+    rank?.league ?? session.league ?? null;
+  const division =
+    rank?.division ?? session.division ?? null;
+
   return {
     discordId: session.discordId ?? null,
     studentName,
@@ -112,14 +135,15 @@ function buildStudentPayload(
     paidCount,
     followups: session.followups ?? 0,
     champions: session.champions ?? null,
-    league: session.league ?? null,
-    division: session.division ?? null,
+    league,
+    division,
   };
 }
 
 async function deliverOnce(
   client: Client,
-  session: WebhookSessionPaidBody
+  session: SessionPaidSessionPayload,
+  rank: SessionPaidRankPayload | null | undefined
 ): Promise<void> {
   const sessionId = session.id;
 
@@ -129,7 +153,7 @@ async function deliverOnce(
   }
 
   const paidCount = await resolvePaidCount(session);
-  const payload = buildStudentPayload(session, paidCount);
+  const payload = buildStudentPayload(session, paidCount, rank);
 
   if (!payload.discordId) {
     throw new Error("missing session.discordId; cannot DM student");
@@ -163,7 +187,8 @@ async function deliverOnce(
  */
 export async function deliverSessionPaidNotifications(
   client: Client,
-  session: WebhookSessionPaidBody
+  session: SessionPaidSessionPayload,
+  rank?: SessionPaidRankPayload | null
 ): Promise<void> {
   const sessionId = session.id;
   if (!sessionId) {
@@ -172,7 +197,7 @@ export async function deliverSessionPaidNotifications(
 
   const prev = sessionChains.get(sessionId) ?? Promise.resolve();
   const current = prev
-    .then(() => deliverOnce(client, session))
+    .then(() => deliverOnce(client, session, rank))
     .catch((err) => {
       throw err;
     });

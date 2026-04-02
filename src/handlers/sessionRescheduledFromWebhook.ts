@@ -2,12 +2,12 @@ import type { Client } from "discord.js";
 import { logError } from "../logger";
 import { notifyStudentRescheduled } from "../services/coaching-related/reschedule/studentDM";
 import { notifyOwnerRescheduled } from "../services/coaching-related/reschedule/ownerDM";
-import type { WebhookSessionPaidBody } from "./sessionPaidFromWebhook";
+import type { SessionPaidSessionPayload } from "./sessionPaidFromWebhook";
 
 export type SessionRescheduledWebhookBody = {
   type: "session_rescheduled";
   previousScheduledStart: string;
-  session: WebhookSessionPaidBody;
+  session: SessionPaidSessionPayload;
 };
 
 type StepState = { student: boolean; owner: boolean };
@@ -42,7 +42,7 @@ function getState(key: string): StepState {
 }
 
 function buildReschedulePayload(
-  session: WebhookSessionPaidBody,
+  session: SessionPaidSessionPayload,
   previousScheduledStart: string
 ): {
   discordId: string | null;
@@ -79,7 +79,7 @@ function buildReschedulePayload(
 
 async function deliverOnce(
   client: Client,
-  session: WebhookSessionPaidBody,
+  session: SessionPaidSessionPayload,
   previousScheduledStart: string,
   stateKey: string
 ): Promise<void> {
@@ -121,7 +121,7 @@ async function deliverOnce(
  */
 export async function deliverSessionRescheduledNotifications(
   client: Client,
-  session: WebhookSessionPaidBody,
+  session: SessionPaidSessionPayload,
   previousScheduledStart: string
 ): Promise<void> {
   if (!session.id) {

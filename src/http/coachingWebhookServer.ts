@@ -4,7 +4,8 @@ import type { Client } from "discord.js";
 import { logError } from "../logger";
 import {
   deliverSessionPaidNotifications,
-  type WebhookSessionPaidBody,
+  type SessionPaidRankPayload,
+  type SessionPaidSessionPayload,
 } from "../handlers/sessionPaidFromWebhook";
 import { deliverSessionRescheduledNotifications } from "../handlers/sessionRescheduledFromWebhook";
 
@@ -117,8 +118,9 @@ export function startCoachingWebhookServer(client: Client): http.Server {
 
         const body = parsed as {
           type?: string;
-          session?: WebhookSessionPaidBody;
+          session?: SessionPaidSessionPayload;
           previousScheduledStart?: string;
+          rank?: SessionPaidRankPayload;
         };
 
         const eventType = body.type;
@@ -141,7 +143,9 @@ export function startCoachingWebhookServer(client: Client): http.Server {
         }
 
         if (eventType === "session_paid") {
-          await deliverSessionPaidNotifications(client, session);
+          const rank =
+            body.rank && typeof body.rank === "object" ? body.rank : undefined;
+          await deliverSessionPaidNotifications(client, session, rank);
         } else {
           const prev = body.previousScheduledStart;
           if (!prev || typeof prev !== "string") {
