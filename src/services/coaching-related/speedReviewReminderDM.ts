@@ -15,7 +15,7 @@ export type SpeedReviewReminderPayload = {
 
 function buildQueueMessage(position: number, nextSessionAt: Date): string {
   const unix = Math.floor(nextSessionAt.getTime() / 1000);
-  const intro = `**Hellooo!!** quick reminder :sparkles:\n> Speedreviews event: <t:${unix}:F>\n> Queue Spot: **#${position}**\n`;
+  const intro = `**Hellooo!!** quick reminder :sparkles:\n> Speedreviews Event: <t:${unix}:F>\n> Queue Spot: **#${position}**\n`;
 
   if (position <= 4) {
     return `${intro}\nYou're in the **top 4** of the queue- so you'll 100% get reviewed if you're there!`;

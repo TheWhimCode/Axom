@@ -6,8 +6,6 @@ import { notifyStudentFollowup } from "../services/coaching-related/studentFollo
 import { notifySpeedReviewReminder } from "../services/coaching-related/speedReviewReminderDM";
 import { logError } from "../logger";
 
-const OWNER_ID = process.env.OWNER_ID!;
-
 function wait(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -202,30 +200,7 @@ async function runTimeChecks(client: Client) {
   );
 }
 
-async function sendSpeedReviewVariantStartupTest(client: Client) {
-  const nextSessionAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
-  const testPositions = [2, 6, 12];
-
-  for (const position of testPositions) {
-    const ok = await notifySpeedReviewReminder(client, {
-      discordId: OWNER_ID,
-      queueEntryId: `startup-test-${position}`,
-      position,
-      nextSessionAt,
-    });
-    if (!ok) {
-      logError(
-        "sendSpeedReviewVariantStartupTest",
-        new Error(`failed to send startup variant for position ${position}`)
-      );
-    }
-  }
-}
-
 export function startTimeCheckCron(client: Client) {
-  void sendSpeedReviewVariantStartupTest(client).catch((err) =>
-    logError("startTimeCheckCron startup speed review test", err)
-  );
   void runTimeChecks(client);
 
   const ONE_HOUR_MS = 60 * 60 * 1000;
