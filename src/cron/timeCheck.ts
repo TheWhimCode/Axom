@@ -3,6 +3,10 @@ import { pool } from "../db";
 import type { SessionRow } from "../types/session";
 import { notifyStudentReminder } from "../services/coaching-related/studentReminderDM";
 import { notifyStudentFollowup } from "../services/coaching-related/studentFollowupDM/index";
+import { notifySpeedReviewReminder } from "../services/coaching-related/speedReviewReminderDM";
+import { logError } from "../logger";
+
+const OWNER_ID = process.env.OWNER_ID!;
 
 function wait(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -111,15 +115,114 @@ async function checkPastSessions(client: Client) {
   }
 }
 
+type SpeedReviewQueueRow = {
+  id: string;
+  discordId: string;
+};
+
+type SpeedReviewConfigRow = {
+  nextSessionAt: Date | null;
+};
+
+async function checkSpeedReview24hReminders(client: Client) {
+  const configRes = await pool.query<SpeedReviewConfigRow>(`
+    SELECT "nextSessionAt"
+    FROM "SpeedReviewConfig"
+    WHERE id = 'default'
+      AND "reminder24hSent" = FALSE
+      AND "nextSessionAt" IS NOT NULL
+      AND ("nextSessionAt" AT TIME ZONE 'UTC')
+            BETWEEN NOW() AND NOW() + interval '24 hours'
+    LIMIT 1
+  `);
+
+  const nextSessionAt = configRes.rows[0]?.nextSessionAt ?? null;
+  if (!nextSessionAt) {
+    return;
+  }
+
+  const queueRes = await pool.query<SpeedReviewQueueRow>(`
+    SELECT id, "discordId"
+    FROM "SpeedReviewQueue"
+    WHERE "reviewStatus" = 'Pending'
+    ORDER BY "previousReviews" ASC, "queueDate" ASC
+    LIMIT 200
+  `);
+
+  let sentAny = false;
+  for (let idx = 0; idx < queueRes.rows.length; idx += 1) {
+    const row = queueRes.rows[idx];
+    if (!row) continue;
+
+    const ok = await notifySpeedReviewReminder(client, {
+      discordId: row.discordId,
+      position: idx + 1,
+      nextSessionAt,
+    });
+
+    if (!ok) {
+      logError(
+        "checkSpeedReview24hReminders",
+        new Error(`failed to DM queue row ${row.id}`)
+      );
+      continue;
+    }
+
+    sentAny = true;
+  }
+
+  if (!sentAny && queueRes.rows.length > 0) {
+    return;
+  }
+
+  await pool.query(
+    `
+      UPDATE "SpeedReviewConfig"
+      SET "reminder24hSent" = TRUE
+      WHERE id = 'default'
+        AND "reminder24hSent" = FALSE
+    `
+  );
+}
+
 // Payment confirmation DMs are triggered by sho-coaching via HTTP webhook (not this cron).
 // -------------------------------------------------------
 
 async function runTimeChecks(client: Client) {
-  await checkUpcomingSessions(client);
-  await checkPastSessions(client);
+  await checkSpeedReview24hReminders(client).catch((err) =>
+    logError("runTimeChecks speedReview24h", err)
+  );
+  await checkUpcomingSessions(client).catch((err) =>
+    logError("runTimeChecks upcoming", err)
+  );
+  await checkPastSessions(client).catch((err) =>
+    logError("runTimeChecks past", err)
+  );
+}
+
+async function sendSpeedReviewVariantStartupTest(client: Client) {
+  const nextSessionAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  const testPositions = [2, 6, 12];
+
+  for (const position of testPositions) {
+    const ok = await notifySpeedReviewReminder(client, {
+      discordId: OWNER_ID,
+      position,
+      nextSessionAt,
+    });
+    if (!ok) {
+      logError(
+        "sendSpeedReviewVariantStartupTest",
+        new Error(`failed to send startup variant for position ${position}`)
+      );
+    }
+  }
 }
 
 export function startTimeCheckCron(client: Client) {
+  void sendSpeedReviewVariantStartupTest(client).catch((err) =>
+    logError("startTimeCheckCron startup speed review test", err)
+  );
   void runTimeChecks(client);
 
   const ONE_HOUR_MS = 60 * 60 * 1000;
