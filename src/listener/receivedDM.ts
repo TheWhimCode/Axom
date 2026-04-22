@@ -1,5 +1,5 @@
 // src/listener/receivedDM.ts
-import type { Client, Message } from "discord.js";
+import type { ButtonInteraction, Client, Message } from "discord.js";
 import { randomUUID } from "crypto";
 import { logError } from "../logger";
 import { pool } from "../db";
@@ -169,5 +169,49 @@ export function registerDMListener(client: Client) {
     } catch (err) {
       logError("receivedDM confirm", err);
     }
+  });
+
+  client.on("interactionCreate", async (interaction) => {
+    if (!interaction.isButton()) return;
+    if (!interaction.customId.startsWith("speed_review_optout:")) return;
+
+    await handleSpeedReviewOptOut(interaction).catch((err) =>
+      logError("speedReview optout interaction", err)
+    );
+  });
+}
+
+async function handleSpeedReviewOptOut(
+  interaction: ButtonInteraction
+): Promise<void> {
+  const queueEntryId = interaction.customId.slice("speed_review_optout:".length);
+  if (!queueEntryId) {
+    await interaction.reply({
+      content: "I couldn't read that queue entry. Please try again.",
+    });
+    return;
+  }
+
+  const res = await pool.query(
+    `
+    UPDATE "SpeedReviewQueue"
+    SET "optOut" = TRUE
+    WHERE id = $1
+      AND "discordId" = $2
+    `,
+    [queueEntryId, interaction.user.id]
+  );
+
+  if (res.rowCount === 0) {
+    await interaction.reply({
+      content: "I couldn't opt you out for this queue entry.",
+    });
+    return;
+  }
+
+  await interaction.update({
+    content:
+      "✅ You are now opted out of Speed Review reminders for this queue entry.",
+    components: [],
   });
 }

@@ -145,6 +145,7 @@ async function checkSpeedReview24hReminders(client: Client) {
     SELECT id, "discordId"
     FROM "SpeedReviewQueue"
     WHERE "reviewStatus" = 'Pending'
+      AND COALESCE("optOut", FALSE) = FALSE
     ORDER BY "previousReviews" ASC, "queueDate" ASC
     LIMIT 200
   `);
@@ -156,6 +157,7 @@ async function checkSpeedReview24hReminders(client: Client) {
 
     const ok = await notifySpeedReviewReminder(client, {
       discordId: row.discordId,
+      queueEntryId: row.id,
       position: idx + 1,
       nextSessionAt,
     });
@@ -207,6 +209,7 @@ async function sendSpeedReviewVariantStartupTest(client: Client) {
   for (const position of testPositions) {
     const ok = await notifySpeedReviewReminder(client, {
       discordId: OWNER_ID,
+      queueEntryId: `startup-test-${position}`,
       position,
       nextSessionAt,
     });
