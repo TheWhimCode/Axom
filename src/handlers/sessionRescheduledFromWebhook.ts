@@ -2,6 +2,7 @@ import type { Client } from "discord.js";
 import { logError } from "../logger";
 import { notifyStudentRescheduled } from "../services/coaching-related/reschedule/studentDM";
 import { notifyOwnerRescheduled } from "../services/coaching-related/reschedule/ownerDM";
+import { updateDiscordEventForReschedule } from "../services/coaching-related/updateDiscordEvent";
 import type { SessionPaidSessionPayload } from "./sessionPaidFromWebhook";
 
 export type SessionRescheduledWebhookBody = {
@@ -113,6 +114,16 @@ async function deliverOnce(
     }
     state.owner = true;
   }
+
+  void updateDiscordEventForReschedule(client, {
+    guildId: process.env.DISCORD_SERVER_ID!,
+    stageChannelId: process.env.STAGE_CHANNEL_ID!,
+    previousScheduledStart: payload.oldStartISO ?? previousScheduledStart,
+    newScheduledStart: payload.newStartISO,
+    scheduledMinutes: payload.scheduledMinutes,
+  }).catch((err) =>
+    logError("deliverSessionRescheduledNotifications updateDiscordEvent", err)
+  );
 }
 
 /**

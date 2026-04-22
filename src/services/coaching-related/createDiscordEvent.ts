@@ -115,8 +115,6 @@ export async function createDiscordEvent(
     ``,
     `If you have questions while watching, write them in the Stage channel chat.`,
     `Sho will answer them after the session ends.`,
-    ``,
-    `Enjoy the session and take notes 📒`,
   ].join("\n");
 
   try {
