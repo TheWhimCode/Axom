@@ -211,7 +211,7 @@ async function handleSpeedReviewOptOut(
 
   await interaction.update({
     content:
-      "✅ You are now opted out of Speed Review reminders for this queue entry.",
+      "✅ I won't annoy you with reminders anymore! :innocent:",
     components: [],
   });
 }
