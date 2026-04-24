@@ -25,7 +25,7 @@ function buildQueueMessage(position: number, nextSessionAt: Date): string {
     return `${intro}\nYou're pretty high in the queue - you might be reviewed if someone else doesn't show up!`;
   }
 
-  return `${intro}\nYou most likely won't be reviewed this time, but you can listen in anyways!`;
+  return `${intro}\nUnless multiple people don't show up, you likely won't be reviewed this time — but you can listen in anyways!`;
 }
 
 export async function notifySpeedReviewReminder(
