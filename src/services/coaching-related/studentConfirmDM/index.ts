@@ -90,7 +90,8 @@ async function sendClosingLineWithTyping(
 
 export async function notifyStudent(
   client: Client,
-  payload: StudentConfirmPayload
+  payload: StudentConfirmPayload,
+  options?: { createEvent?: boolean }
 ): Promise<boolean> {
   if (!payload.discordId) return false;
 
@@ -107,18 +108,20 @@ export async function notifyStudent(
 
   if (!mainOk) return false;
 
-  void createDiscordEvent(client, {
-    guildId: process.env.DISCORD_SERVER_ID!,
-    stageChannelId: process.env.STAGE_CHANNEL_ID!,
-    scheduledStart: payload.scheduledStart,
-    scheduledMinutes: payload.scheduledMinutes,
-    sessionType: payload.sessionType,
-    studentName: payload.studentName,
-    riotTag: payload.riotTag,
-    champions: payload.champions,
-    league: payload.league,
-    division: payload.division,
-  }).catch((err) => logError("studentConfirmDM createDiscordEvent", err));
+  if (options?.createEvent !== false) {
+    void createDiscordEvent(client, {
+      guildId: process.env.DISCORD_SERVER_ID!,
+      stageChannelId: process.env.STAGE_CHANNEL_ID!,
+      scheduledStart: payload.scheduledStart,
+      scheduledMinutes: payload.scheduledMinutes,
+      sessionType: payload.sessionType,
+      studentName: payload.studentName,
+      riotTag: payload.riotTag,
+      champions: payload.champions,
+      league: payload.league,
+      division: payload.division,
+    }).catch((err) => logError("studentConfirmDM createDiscordEvent", err));
+  }
 
   if (hasFollowup) {
     await sendHasFollowupDM(client, payload, { closingLine });

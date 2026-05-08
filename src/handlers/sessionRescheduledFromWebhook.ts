@@ -11,7 +11,7 @@ export type SessionRescheduledWebhookBody = {
   session: SessionPaidSessionPayload;
 };
 
-type StepState = { student: boolean; owner: boolean };
+type StepState = { student: boolean; owner: boolean; event: boolean };
 
 /** Dedupe key: same reschedule transition (retries share this). */
 const deliveryState = new Map<string, StepState>();
@@ -36,7 +36,7 @@ function dedupeKey(
 function getState(key: string): StepState {
   let s = deliveryState.get(key);
   if (!s) {
-    s = { student: false, owner: false };
+    s = { student: false, owner: false, event: false };
     deliveryState.set(key, s);
   }
   return s;
@@ -91,20 +91,23 @@ async function deliverOnce(
   const payload = buildReschedulePayload(session, previousScheduledStart);
   const state = getState(stateKey);
 
-  if (state.student && state.owner) {
+  if (state.owner && state.event) {
     return;
   }
 
-  if (!payload.discordId) {
-    throw new Error("missing session.discordId; cannot DM student");
-  }
-
+  // Student DM failures should not block owner notifications or event updates.
   if (!state.student) {
-    const ok = await notifyStudentRescheduled(client, payload);
-    if (!ok) {
-      throw new Error("notifyStudentRescheduled failed");
+    if (payload.discordId) {
+      const ok = await notifyStudentRescheduled(client, payload);
+      if (!ok) {
+        logError(
+          "sessionRescheduledFromWebhook notifyStudent",
+          new Error("notifyStudentRescheduled failed")
+        );
+      } else {
+        state.student = true;
+      }
     }
-    state.student = true;
   }
 
   if (!state.owner) {
@@ -115,15 +118,19 @@ async function deliverOnce(
     state.owner = true;
   }
 
-  void updateDiscordEventForReschedule(client, {
-    guildId: process.env.DISCORD_SERVER_ID!,
-    stageChannelId: process.env.STAGE_CHANNEL_ID!,
-    previousScheduledStart: payload.oldStartISO ?? previousScheduledStart,
-    newScheduledStart: payload.newStartISO,
-    scheduledMinutes: payload.scheduledMinutes,
-  }).catch((err) =>
-    logError("deliverSessionRescheduledNotifications updateDiscordEvent", err)
-  );
+  if (!state.event) {
+    const ok = await updateDiscordEventForReschedule(client, {
+      guildId: process.env.DISCORD_SERVER_ID!,
+      stageChannelId: process.env.STAGE_CHANNEL_ID!,
+      previousScheduledStart: payload.oldStartISO ?? previousScheduledStart,
+      newScheduledStart: payload.newStartISO,
+      scheduledMinutes: payload.scheduledMinutes,
+    });
+    if (!ok) {
+      throw new Error("updateDiscordEventForReschedule failed");
+    }
+    state.event = true;
+  }
 }
 
 /**

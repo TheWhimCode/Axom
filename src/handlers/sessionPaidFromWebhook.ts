@@ -2,6 +2,7 @@ import type { Client } from "discord.js";
 import { pool } from "../db";
 import { logError } from "../logger";
 import { notifyOwner } from "../services/coaching-related/bookingDM";
+import { createDiscordEvent } from "../services/coaching-related/createDiscordEvent";
 import {
   notifyStudent,
   type StudentConfirmPayload,
@@ -60,7 +61,7 @@ export type SessionPaidRankPayload = {
 /** @deprecated Use SessionPaidSessionPayload */
 export type WebhookSessionPaidBody = SessionPaidSessionPayload;
 
-type StepState = { student: boolean; owner: boolean };
+type StepState = { student: boolean; owner: boolean; event: boolean };
 
 const deliveryState = new Map<string, StepState>();
 /** Serialize concurrent webhooks for the same session id. */
@@ -69,7 +70,7 @@ const sessionChains = new Map<string, Promise<void>>();
 function getState(sessionId: string): StepState {
   let s = deliveryState.get(sessionId);
   if (!s) {
-    s = { student: false, owner: false };
+    s = { student: false, owner: false, event: false };
     deliveryState.set(sessionId, s);
   }
   return s;
@@ -202,7 +203,7 @@ async function deliverOnce(
   const sessionId = session.id;
 
   const state = getState(sessionId);
-  if (state.student && state.owner) {
+  if (state.owner && state.event) {
     return;
   }
 
@@ -210,20 +211,18 @@ async function deliverOnce(
   const championsResolved = await resolveChampions(session);
   const payload = buildStudentPayload(session, paidCount, rank, championsResolved);
 
-  if (!payload.discordId) {
-    throw new Error("missing session.discordId; cannot DM student");
-  }
-
   if (!payload.scheduledStart) {
     throw new Error("missing scheduledStart / slotStartISO");
   }
 
-  if (!state.student) {
-    const ok = await notifyStudent(client, payload);
+  // Student DM failures should not block owner notifications or event creation.
+  if (!state.student && payload.discordId) {
+    const ok = await notifyStudent(client, payload, { createEvent: false });
     if (!ok) {
-      throw new Error("notifyStudent failed");
+      logError("sessionPaidFromWebhook notifyStudent", new Error("notifyStudent failed"));
+    } else {
+      state.student = true;
     }
-    state.student = true;
   }
 
   if (!state.owner) {
@@ -232,6 +231,26 @@ async function deliverOnce(
       throw new Error("notifyOwner failed");
     }
     state.owner = true;
+  }
+
+  // Discord event creation is required for this flow.
+  if (!state.event) {
+    const ok = await createDiscordEvent(client, {
+      guildId: process.env.DISCORD_SERVER_ID!,
+      stageChannelId: process.env.STAGE_CHANNEL_ID!,
+      scheduledStart: payload.scheduledStart,
+      scheduledMinutes: payload.scheduledMinutes,
+      sessionType: payload.sessionType,
+      studentName: payload.studentName,
+      riotTag: payload.riotTag,
+      champions: payload.champions,
+      league: payload.league,
+      division: payload.division,
+    });
+    if (!ok) {
+      throw new Error("createDiscordEvent failed");
+    }
+    state.event = true;
   }
 }
 
