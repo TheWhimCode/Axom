@@ -105,7 +105,7 @@ export async function sendHasFollowupDM(
         [
           "Okay, so basically: After the session you take some time to practise.",
           "",
-          "**Once you feel ready,** send Sho a game to review (just the KDA is fine). 🔎",
+          "**Once you feel ready,** send Mino a game to review (just the KDA is fine). 🔎",
           "He'll send you a 15-20 minute review video to give you the *next skills to work on.*",
           "",
           "It's basically a second coaching session! ⚡",

@@ -25,11 +25,11 @@ export async function sendDefaultFollowupDM(
     `It’s totally normal to feel like your head is full of ideas :face_with_spiral_eyes: — just focus on *1–2 things at a time*. That’s how progress actually sticks ✨`,
     ``,
     `**> I can feel it. WinnersQ is up ahead! 📈**`,
-    `Sho told me to give you this code — **\`${opts.couponCode}\`**!`,
+    `Mino told me to give you this code — **\`${opts.couponCode}\`**!`,
     `It gives you **${opts.couponValue}€** off your next coaching session.`,
     `If a friend uses your code, they also get 5€ off — and your code gets a one-time 5€ upgrade 😱`,
     ``,
-    `You can leave a review for Shos website or share some feedback if you want, just type it **right into this chat** — even a short message is perfect 💌`,
+    `You can leave a review for Mino's website or share some feedback if you want, just type it **right into this chat** — even a short message is perfect 💌`,
   ].join("\n");
 
   try {

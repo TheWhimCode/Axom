@@ -110,11 +110,11 @@ export async function createDiscordEvent(
     title = `Coaching: | ${rankDisplay}`;
   }
   const description = [
-    `This is a scheduled coaching session with Sho :boom:`,
+    `This is a scheduled coaching session with Mino :boom:`,
     `**You're welcome to join, listen, and learn from the session in real time.**`,
     ``,
     `If you have questions while watching, write them in the Stage channel chat.`,
-    `Sho will answer them after the session ends.`,
+    `Mino will answer them after the session ends.`,
   ].join("\n");
 
   try {

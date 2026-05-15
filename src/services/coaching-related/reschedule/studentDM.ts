@@ -35,7 +35,7 @@ export async function notifyStudentRescheduled(
 
   const msg = [
     `> **HEY ${name}!**`,
-    `> Small update: your **${sessionType}** with Sho got **rescheduled** :calendar_spiral:`,
+    `> Small update: your **${sessionType}** with Mino got **rescheduled** :calendar_spiral:`,
     ``,
     `Here’s the new time:`,
     `📅 **Date:** <t:${newUnix}:D>`,

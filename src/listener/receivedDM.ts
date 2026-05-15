@@ -25,16 +25,16 @@ const lastConfirmSent = new Map<string, number>();
 const MAX_FORWARD_CHARS = 3500;
 
 const CONFIRM_MESSAGES = [
-  "Noted!! Will let Sho know :cowboy:",
-  "Got it — passing this to Sho 🔥",
-  "Received! Sho will see this soon 📬",
-  "Perfect — I’ll make sure Sho checks this :innocent:",
+  "Noted!! Will let Mino know :cowboy:",
+  "Got it — passing this to Mino 🔥",
+  "Received! Mino will see this soon 📬",
+  "Perfect — I’ll make sure Mino checks this :innocent:",
   "Message received! 👌",
 ];
 
 function pickRandomConfirmation(): string {
   const i = Math.floor(Math.random() * CONFIRM_MESSAGES.length);
-  return CONFIRM_MESSAGES[i] ?? "Noted!! Will let Sho know :cowboy:";
+  return CONFIRM_MESSAGES[i] ?? "Noted!! Will let Mino know :cowboy:";
 }
 
 function sleep(ms: number) {

@@ -26,7 +26,7 @@ export async function sendDefaultDM(
 
   const msg = [
     `> **HEY ${name}!**`,
-    `> You just booked a **${sessionType}** with Sho! :partying_face:`,
+    `> You just booked a **${sessionType}** with Mino! :partying_face:`,
     ``,
     `Here are some useful details:`,
     `:pencil: **Length:** \`${scheduledMinutes} minutes\``,
@@ -36,13 +36,13 @@ export async function sendDefaultDM(
     `:studio_microphone: **How sessions work**`,
     `Most sessions are held in a Discord **Stage Channel** :satellite:,`,
     `so others can quietly watch and learn from them.`,
-    `You'll be the only one talking with Sho!! — viewers can't interrupt.`,
+    `You'll be the only one talking with Mino!! — viewers can't interrupt.`,
     ``,
     `If you'd prefer a completely private session instead,`,
     `just reply here with **"no public session"** — no worries at all.`,
     ``,
     `I will send you a *little reminder* a few hours before the session! :mage:`,
-    `If you have questions at all, please reach out to Sho directly (he doesn't mind).`,
+    `If you have questions at all, please reach out to Mino directly (they don't mind).`,
   ].join("\n");
 
   try {

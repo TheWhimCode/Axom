@@ -33,10 +33,10 @@ export async function notifyStudentReminder(
 
   const msg = [
     `**I'm back!!** as promised 😎`,
-    `Your **${sessionType}** with Sho is coming up soon! 👀`,
+    `Your **${sessionType}** with Mino is coming up soon! 👀`,
     `> Don't forget to join the Discord <t:${unix}:R>`,
     `> https://discord.gg/twrGXB7Px2`,
-    `If something came up, please let Sho know ASAP!`,
+    `If something came up, please let Mino know ASAP!`,
     ``,
     `**See you soon!** <:Challenger:1378748820090917095>`,
   ].join("\n");

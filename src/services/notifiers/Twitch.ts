@@ -135,7 +135,7 @@ await new Promise(res => setTimeout(res, 15000));
         content: `<@&${process.env.STREAM_ROLE_ID}>`,
         embeds: [
           {
-            title: "SHO IS LIVE AGAIN!! 🎉",
+            title: "MINO IS LIVE AGAIN!! 🎉",
             description: title,
             color: 0x9146ff,
     image: { url: finalThumb },      // <-- large preview

@@ -26,7 +26,7 @@ export async function sendReturningDM(
 
   const msg = [
     `> **HEY ${name}!**`,
-    `> You just booked a **${sessionType}** with Sho! :partying_face:`,
+    `> You just booked a **${sessionType}** with Mino! :partying_face:`,
     ``,
     `Here are some useful details:`,
     `:pencil: **Length:** \`${scheduledMinutes} minutes\``,
