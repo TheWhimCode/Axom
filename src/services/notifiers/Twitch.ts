@@ -7,6 +7,7 @@ import {
   ButtonBuilder,
   ButtonStyle,
 } from "discord.js";
+import { pool } from "../../db";
 import { logError } from "../../logger";
 
 // ---------------------------------------------
@@ -91,9 +92,25 @@ async function checkLive(client: Client) {
 }
 
 // ---------------------------------------------
+// SiteConfig — keep website live flag in sync
+// ---------------------------------------------
+async function setTwitchLiveManual(isLive: boolean) {
+  await safeAction(() =>
+    pool.query(
+      `UPDATE "SiteConfig"
+       SET "twitchLiveManual" = $1, "updatedAt" = NOW()
+       WHERE id = 'default'`,
+      [isLive]
+    )
+  );
+}
+
+// ---------------------------------------------
 // LIVE EVENT LOGIC
 // ---------------------------------------------
 async function handleLiveEvent(client: Client, title: string, thumbnail: string) {
+  await setTwitchLiveManual(true);
+
   const channelId = process.env.DISCORD_LIVE_CHANNEL_ID!;
   const channel = await client.channels.fetch(channelId);
   if (!channel) return;
@@ -153,6 +170,8 @@ await new Promise(res => setTimeout(res, 15000));
 // OFFLINE EVENT LOGIC
 // ---------------------------------------------
 async function handleOfflineEvent(client: Client) {
+  await setTwitchLiveManual(false);
+
   const channelId = process.env.DISCORD_LIVE_CHANNEL_ID!;
   const channel = await client.channels.fetch(channelId);
   if (!channel) return;
