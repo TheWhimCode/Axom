@@ -13,7 +13,6 @@ import { logError } from "./src/logger";
 import { startTimeCheckCron } from "./src/cron/timeCheck";
 import { registerDMListener } from "./src/listener/receivedDM";
 import { startTwitchLiveChecker } from "./src/services/notifiers/Twitch";
-import { startOwnerWellbeingCron } from "./src/cron/selfcare";
 import { startOwnerMorningScheduleCron } from "./src/cron/sessionsToday";
 import { startCoachingWebhookServer } from "./src/http/coachingWebhookServer";
 
@@ -72,9 +71,6 @@ client.once(Events.ClientReady, () => {
   startTimeCheckCron(client);
   registerDMListener(client);
   startTwitchLiveChecker(client);
-
-  // Your self-care DMs
-  startOwnerWellbeingCron(client);
 
   // Your 8am daily schedule summary
   startOwnerMorningScheduleCron(client);
